@@ -11,7 +11,7 @@ dates, turn lecture PDFs into summaries, flashcards and quizzes, and track daily
 | Backend  | Node.js, Express                                      |
 | Database | MongoDB Atlas + Mongoose                              |
 | Auth     | JWT + bcrypt                                          |
-| AI       | Groq / OpenAI-compatible API                          |
+| AI       | OpenAI-compatible API (Groq by default, `openai/gpt-oss-20b` via `AI_API_KEY`) |
 | Uploads  | Multer + PDF text extraction                          |
 
 ## Project structure
@@ -32,6 +32,19 @@ server/            Express API
   src/middleware/  protect (JWT), error handling
   scripts/         API tests (in-memory MongoDB)
 ```
+
+## AI Architecture & Configuration
+
+The AI layer is provider-agnostic and interfaces with standard OpenAI-compatible chat completions (`/v1/chat/completions`). It defaults to **Groq** for fast inference using `openai/gpt-oss-20b` (or any model specified via `AI_MODEL`), authenticated via `AI_API_KEY`.
+
+> **Important**: StudyMind does **not** use Anthropic / Claude. All AI capabilities (lecture summaries & study notes, flashcard generation, quiz generation, and PDF Q&A) use OpenAI-compatible chat completion endpoints.
+
+| Environment Variable | Default / Example | Purpose |
+| -------------------- | ----------------- | ------- |
+| `AI_API_KEY` | *(Required for AI)* | API key for Groq or an OpenAI-compatible provider |
+| `AI_BASE_URL` | `https://api.groq.com/openai/v1` | Base URL pointing to the completions endpoint (must end in `/v1`) |
+| `AI_MODEL` | `openai/gpt-oss-20b` | Model name supported by the provider |
+| `AI_AUTH_STYLE` | `bearer` | HTTP header authorization style (`bearer` or `api-key`) |
 
 ## API
 
@@ -57,7 +70,6 @@ server/            Express API
 | POST   | /api/documents/:id/quiz | yes | AI multiple choice quiz      |
 | POST   | /api/documents/:id/ask  | yes | Ask a question about the PDF |
 
-
 ## Setup
 
 ```bash
@@ -66,7 +78,13 @@ cp server/.env.example server/.env
 cp client/.env.example client/.env
 ```
 
-Fill in `server/.env` (at minimum `MONGO_URI`).
+1. **Backend (`server/.env`)**:
+   - Provide `MONGO_URI` with your MongoDB connection string.
+   - Configure `JWT_SECRET` with a secure random key.
+   - Configure `AI_API_KEY` (e.g., from Groq) along with `AI_BASE_URL` to enable AI study notes, flashcards, quizzes, and Q&A. *(Do not configure Anthropic keys).*
+2. **Frontend (`client/.env`)**:
+   - Leave empty in local development to use the Vite proxy (`/api` forwards to `http://localhost:5000`, configurable via `VITE_PROXY_TARGET`).
+   - In production, set `VITE_API_URL` to your hosted server's `/api` endpoint.
 
 ## Run
 
@@ -82,7 +100,8 @@ Open http://localhost:5173. The landing page shows API and database status.
 npm --prefix server run test:api        # auth + profile
 npm --prefix server run test:tasks      # tasks CRUD + ownership
 npm --prefix server run test:documents  # PDF upload, extraction, ownership
+npm --prefix server run test:ai         # AI service & prompt formatting (mocked)
 npm --prefix server run check:db        # redacted MongoDB connection check
 ```
-All tests boot an in-memory MongoDB — no Atlas connection needed.
+All tests boot an in-memory MongoDB — no Atlas or external AI connection needed.
 

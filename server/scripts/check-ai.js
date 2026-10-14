@@ -36,7 +36,7 @@ if (!/\/v\d+$/.test(baseURL)) {
     '\nresult: FAILED before sending\n' +
       '  AI_BASE_URL must be the OpenAI-compatible root, which for Groq ends in /v1:\n' +
       '    AI_BASE_URL=https://api.groq.com/openai/v1\n' +
-      '  (Unlike the Anthropic API, OpenAI-compatible paths are relative to /v1.)\n'
+      '  (OpenAI-compatible endpoints are relative to /v1.)\n'
   );
   process.exit(1);
 }
