@@ -14,11 +14,12 @@ api.interceptors.request.use((config) => {
   const token = localStorage.getItem(TOKEN_KEY);
   if (token) config.headers.Authorization = `Bearer ${token}`;
 
-  // Attach client timezone and offset headers for timezone-aware queries
+  // Attach client timezone header for timezone-aware queries
   try {
-    const tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
-    if (tz) config.headers['x-timezone'] = tz;
-    config.headers['x-timezone-offset'] = new Date().getTimezoneOffset();
+    const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+    if (timezone) {
+      config.headers['X-Timezone'] = timezone;
+    }
   } catch {
     /* ignore in environments where Intl is not supported */
   }

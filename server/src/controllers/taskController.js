@@ -17,74 +17,57 @@ function setCompleted(task, completed) {
 
 /**
  * Calculates startOfToday (00:00:00.000) and endOfToday (23:59:59.999) in UTC
- * relative to the user's local timezone or offset.
- * Supports req.query.timezone, req.headers['x-timezone'], req.query.tzOffset, or req.headers['x-timezone-offset'].
+ * relative to the user's local timezone from req.headers['x-timezone'].
+ * Validates timezone and falls back to 'UTC' if absent or invalid.
  */
-export function getUserTodayRange(req) {
-  const timezone = req.query?.timezone || req.headers?.['x-timezone'];
-  const offsetHeader = req.query?.tzOffset ?? req.headers?.['x-timezone-offset'];
-  const offsetMinutes =
-    offsetHeader !== undefined && offsetHeader !== null && offsetHeader !== ''
-      ? Number(offsetHeader)
-      : NaN;
-  const now = new Date();
-
-  if (timezone) {
+export function getUserTodayRange(req, now = new Date()) {
+  let timeZone = 'UTC';
+  const rawTz = req.headers?.['x-timezone'] || req.query?.timezone;
+  if (rawTz && typeof rawTz === 'string') {
     try {
-      const parts = new Intl.DateTimeFormat('en-US', {
-        timeZone: timezone,
-        year: 'numeric',
-        month: 'numeric',
-        day: 'numeric',
-        hour: 'numeric',
-        minute: 'numeric',
-        second: 'numeric',
-        hour12: false,
-      }).formatToParts(now);
-
-      const obj = {};
-      for (const p of parts) obj[p.type] = p.value;
-
-      const hour = obj.hour === '24' ? 0 : Number(obj.hour);
-      const localNow = new Date(
-        Date.UTC(
-          Number(obj.year),
-          Number(obj.month) - 1,
-          Number(obj.day),
-          hour,
-          Number(obj.minute),
-          Number(obj.second)
-        )
-      );
-      const diffMs = localNow.getTime() - now.getTime();
-      const startOfTodayLocal = new Date(
-        Date.UTC(Number(obj.year), Number(obj.month) - 1, Number(obj.day), 0, 0, 0, 0)
-      );
-      const startOfTodayUTC = new Date(startOfTodayLocal.getTime() - diffMs);
-      const endOfTodayUTC = new Date(startOfTodayUTC.getTime() + 24 * 60 * 60 * 1000 - 1);
-      return { startOfToday: startOfTodayUTC, endOfToday: endOfTodayUTC };
+      Intl.DateTimeFormat(undefined, { timeZone: rawTz.trim() });
+      timeZone = rawTz.trim();
     } catch {
-      /* fallback on invalid timezone string */
+      timeZone = 'UTC';
     }
   }
 
-  if (Number.isFinite(offsetMinutes)) {
-    // client Date.prototype.getTimezoneOffset() returns minutes difference: UTC - local
-    const localTimeMs = now.getTime() - offsetMinutes * 60000;
-    const localDate = new Date(localTimeMs);
-    const startOfTodayLocal = new Date(
-      Date.UTC(localDate.getUTCFullYear(), localDate.getUTCMonth(), localDate.getUTCDate(), 0, 0, 0, 0)
-    );
-    const startOfTodayUTC = new Date(startOfTodayLocal.getTime() + offsetMinutes * 60000);
-    const endOfTodayUTC = new Date(startOfTodayUTC.getTime() + 24 * 60 * 60 * 1000 - 1);
-    return { startOfToday: startOfTodayUTC, endOfToday: endOfTodayUTC };
-  }
+  try {
+    const parts = new Intl.DateTimeFormat('en-US', {
+      timeZone,
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit',
+      hour12: false,
+    }).formatToParts(now);
 
-  const start = new Date(now);
-  start.setHours(0, 0, 0, 0);
-  const end = new Date(start);
-  end.setHours(23, 59, 59, 999);
-  return { startOfToday: start, endOfToday: end };
+    const getPart = (type) => parts.find((p) => p.type === type)?.value;
+    const year = Number(getPart('year'));
+    const month = Number(getPart('month'));
+    const day = Number(getPart('day'));
+    const rawHour = getPart('hour');
+    const hour = rawHour === '24' ? 0 : Number(rawHour);
+    const minute = Number(getPart('minute'));
+    const second = Number(getPart('second'));
+
+    const localWallUtcMs = Date.UTC(year, month - 1, day, hour, minute, second);
+    const nowNoMs = Math.floor(now.getTime() / 1000) * 1000;
+    const offsetMs = localWallUtcMs - nowNoMs;
+
+    const startOfTodayMs = Date.UTC(year, month - 1, day, 0, 0, 0, 0) - offsetMs;
+    const startOfToday = new Date(startOfTodayMs);
+    const endOfToday = new Date(startOfTodayMs + 24 * 60 * 60 * 1000 - 1);
+
+    return { timeZone, startOfToday, endOfToday };
+  } catch {
+    const start = new Date(now);
+    start.setUTCHours(0, 0, 0, 0);
+    const end = new Date(start.getTime() + 24 * 60 * 60 * 1000 - 1);
+    return { timeZone: 'UTC', startOfToday: start, endOfToday: end };
+  }
 }
 
 /** GET /api/tasks?status=pending|completed&subject=Maths&due=today|overdue */
