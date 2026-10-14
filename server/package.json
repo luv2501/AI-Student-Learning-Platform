@@ -1,0 +1,30 @@
+{
+  "name": "studymind-server",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "main": "src/server.js",
+  "scripts": {
+    "start": "node src/server.js",
+    "dev": "node --watch src/server.js",
+    "test:api": "node scripts/test-api.js",
+    "test:tasks": "node scripts/test-tasks.js",
+    "test:documents": "node scripts/test-documents.js",
+    "test:ai": "node scripts/test-ai.js",
+    "check:db": "node scripts/check-db.js",
+    "check:ai": "node scripts/check-ai.js"
+  },
+  "dependencies": {
+    "bcryptjs": "^3.0.3",
+    "cors": "^2.8.6",
+    "dotenv": "^17.4.2",
+    "express": "^5.2.1",
+    "jsonwebtoken": "^9.0.3",
+    "mongoose": "^9.9.4",
+    "multer": "^2.2.0",
+    "pdf-parse": "^2.4.5"
+  },
+  "devDependencies": {
+    "mongodb-memory-server": "^11.2.0"
+  }
+}
