@@ -97,10 +97,12 @@ export default function StudyWorkspace() {
   const others = library.filter((item) => item._id !== id);
 
   const ready = [
-    doc.notes && 'Notes',
-    doc.flashcards?.length && 'Flashcards',
-    doc.quiz?.length && 'Quiz',
+    (doc.hasNotes || Boolean(doc.notes)) && 'Notes',
+    (doc.hasFlashcards || (Array.isArray(doc.flashcards) && doc.flashcards.length > 0)) && 'Flashcards',
+    (doc.hasQuiz || (Array.isArray(doc.quiz) && doc.quiz.length > 0)) && 'Quiz',
   ].filter(Boolean);
+
+  const docTitle = doc.title || doc.originalName || '';
 
   return (
     <div className="space-y-5">
@@ -116,7 +118,7 @@ export default function StudyWorkspace() {
         <div className="mt-2 flex flex-wrap items-start justify-between gap-3">
           <div className="min-w-0">
             <h1 className="truncate text-2xl font-semibold tracking-tight text-slate-900 sm:text-3xl">
-              {doc.originalName.replace(/\.pdf$/i, '')}
+              {docTitle.replace(/\.pdf$/i, '')}
             </h1>
             <p className="mt-1 text-sm text-slate-500">
               {doc.pageCount} page{doc.pageCount === 1 ? '' : 's'} ·{' '}
@@ -168,7 +170,7 @@ export default function StudyWorkspace() {
             <ul className="sm-scroll max-h-[26rem] overflow-y-auto">
               <li>
                 <span className="flex items-start gap-2 border-l-2 border-indigo-600 bg-indigo-50/60 px-3.5 py-2.5 text-sm font-medium text-indigo-800">
-                  <span className="truncate">{doc.originalName}</span>
+                  <span className="truncate">{doc.title || doc.originalName}</span>
                 </span>
               </li>
               {others.map((item) => (
@@ -177,7 +179,7 @@ export default function StudyWorkspace() {
                     to={`/documents/${item._id}?tab=${tab}`}
                     className="flex items-start gap-2 border-l-2 border-transparent px-3.5 py-2.5 text-sm text-slate-600 transition hover:border-slate-300 hover:bg-slate-50 hover:text-slate-900"
                   >
-                    <span className="truncate">{item.originalName}</span>
+                    <span className="truncate">{item.title || item.originalName}</span>
                   </Link>
                 </li>
               ))}

@@ -278,7 +278,7 @@ export default function Dashboard() {
                       to={`/documents/${doc._id}`}
                       className="block truncate text-sm font-medium text-slate-900 hover:text-indigo-700"
                     >
-                      {doc.originalName}
+                      {doc.title || doc.originalName}
                     </Link>
                     <div className="mt-1 flex flex-wrap items-center gap-1.5">
                       {doc.hasNotes && <Badge tone="emerald">Notes</Badge>}

@@ -82,22 +82,9 @@ export async function listDocuments(req, res) {
     .sort({ createdAt: -1 })
     .lean();
 
-  // Send flags instead of the cached AI payloads to keep the list small and coherent with toPublic().
+  // Send lightweight public shape with standardized metadata and presence flags
   res.json({
-    documents: documents.map((d) => ({
-      _id: d._id,
-      originalName: d.originalName,
-      fileName: d.fileName,
-      size: d.size,
-      pageCount: d.pageCount,
-      textLength: d.textLength,
-      isTruncated: Boolean(d.isTruncated),
-      createdAt: d.createdAt,
-      updatedAt: d.updatedAt,
-      hasNotes: Boolean(d.notes),
-      hasFlashcards: Boolean(d.flashcards?.length > 0),
-      hasQuiz: Boolean(d.quiz?.length > 0),
-    })),
+    documents: documents.map((d) => Document.toPublic(d, { lightweight: true })),
   });
 }
 

@@ -38,7 +38,8 @@ export default function NotesPanel({ document: doc, onGenerated }) {
     );
   }
 
-  const markdown = toMarkdown(notes, doc.originalName);
+  const docTitle = doc.title || doc.originalName || 'document';
+  const markdown = toMarkdown(notes, docTitle);
 
   async function copy() {
     try {
@@ -55,7 +56,7 @@ export default function NotesPanel({ document: doc, onGenerated }) {
     const url = URL.createObjectURL(blob);
     const link = window.document.createElement('a');
     link.href = url;
-    link.download = `${doc.originalName.replace(/\.pdf$/i, '')} notes.md`;
+    link.download = `${docTitle.replace(/\.pdf$/i, '')} notes.md`;
     link.click();
     URL.revokeObjectURL(url);
   }

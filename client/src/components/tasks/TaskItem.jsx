@@ -1,6 +1,7 @@
 import Button from '../ui/Button.jsx';
 import Badge from '../ui/Badge.jsx';
 import Spinner from '../ui/Spinner.jsx';
+import { DEFAULT_TASK_SUBJECT } from '../../lib/constants.js';
 
 const priorityTone = { low: 'slate', medium: 'amber', high: 'rose' };
 
@@ -56,7 +57,7 @@ export default function TaskItem({ task, onToggle, onEdit, onDelete, busy, compa
         )}
 
         <div className="mt-1.5 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs">
-          <Badge tone="indigo">{task.subject}</Badge>
+          <Badge tone="indigo">{task.subject || DEFAULT_TASK_SUBJECT}</Badge>
           <Badge tone={priorityTone[task.priority]}>{task.priority}</Badge>
           {due && <span className={`font-medium ${due.tone}`}>{due.text}</span>}
         </div>

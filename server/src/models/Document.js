@@ -42,16 +42,57 @@ const documentSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
-/** Everything except the bulky extracted text, with standardized presence flags. */
-documentSchema.methods.toPublic = function toPublic() {
-  const { extractedText, ...rest } = this.toObject();
-  return {
-    ...rest,
-    hasNotes: Boolean(this.notes),
-    hasFlashcards: Array.isArray(this.flashcards) && this.flashcards.length > 0,
-    hasQuiz: Array.isArray(this.quiz) && this.quiz.length > 0,
-    isTruncated: Boolean(this.isTruncated),
+/**
+ * Transforms a document (or lean document object) into its public representation.
+ * In lightweight mode (used for lists), raw AI payloads and heavy text are omitted.
+ * In full mode (used for single document detail), cached AI payloads are included.
+ */
+export function formatPublicDocument(doc, { lightweight = false } = {}) {
+  if (!doc) return null;
+  const obj = typeof doc.toObject === 'function' ? doc.toObject() : { ...doc };
+
+  const hasNotes = Boolean(obj.notes);
+  const hasFlashcards = Boolean(Array.isArray(obj.flashcards) && obj.flashcards.length > 0);
+  const hasQuiz = Boolean(Array.isArray(obj.quiz) && obj.quiz.length > 0);
+  const isTruncated = Boolean(obj.isTruncated);
+
+  const base = {
+    _id: obj._id,
+    title: obj.title || obj.originalName || '',
+    originalName: obj.originalName || obj.title || '',
+    fileName: obj.fileName,
+    fileSize: obj.fileSize ?? obj.size ?? 0,
+    size: obj.size ?? obj.fileSize ?? 0,
+    pageCount: obj.pageCount ?? 0,
+    textLength: obj.textLength ?? 0,
+    isTruncated,
+    createdAt: obj.createdAt,
+    updatedAt: obj.updatedAt,
+    hasNotes,
+    hasFlashcards,
+    hasQuiz,
   };
+
+  if (lightweight) {
+    return base;
+  }
+
+  return {
+    ...base,
+    user: obj.user,
+    notes: obj.notes || null,
+    flashcards: Array.isArray(obj.flashcards) ? obj.flashcards : [],
+    quiz: Array.isArray(obj.quiz) ? obj.quiz : [],
+  };
+}
+
+/** Everything except the bulky extracted text, with standardized presence flags. */
+documentSchema.methods.toPublic = function toPublic(options = {}) {
+  return formatPublicDocument(this, options);
+};
+
+documentSchema.statics.toPublic = function toPublic(doc, options = {}) {
+  return formatPublicDocument(doc, options);
 };
 
 export default mongoose.model('Document', documentSchema);

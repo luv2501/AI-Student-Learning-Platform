@@ -54,8 +54,9 @@ export default function Documents() {
     setUploading(true);
     try {
       const { data } = await api.post('/documents', form);
+      const name = data.document.title || data.document.originalName;
       setSuccess(
-        `"${data.document.originalName}" is ready — ${data.document.pageCount} page(s) of text extracted.`
+        `"${name}" is ready — ${data.document.pageCount} page(s) of text extracted.`
       );
       if (fileInput.current) fileInput.current.value = '';
       await load();
@@ -67,7 +68,8 @@ export default function Documents() {
   }
 
   async function remove(doc) {
-    if (!window.confirm(`Delete "${doc.originalName}" and everything generated from it?`)) return;
+    const name = doc.title || doc.originalName;
+    if (!window.confirm(`Delete "${name}" and everything generated from it?`)) return;
 
     setError('');
     try {
@@ -81,7 +83,7 @@ export default function Documents() {
   const visible = useMemo(() => {
     const term = search.trim().toLowerCase();
     if (!term) return documents;
-    return documents.filter((d) => d.originalName.toLowerCase().includes(term));
+    return documents.filter((d) => (d.title || d.originalName || '').toLowerCase().includes(term));
   }, [documents, search]);
 
   return (
@@ -203,10 +205,10 @@ export default function Documents() {
                     to={`/documents/${doc._id}`}
                     className="block truncate text-sm font-semibold text-slate-900 transition hover:text-indigo-700"
                   >
-                    {doc.originalName}
+                    {doc.title || doc.originalName}
                   </Link>
                   <p className="mt-0.5 text-xs text-slate-500">
-                    {doc.pageCount} page{doc.pageCount === 1 ? '' : 's'} · {formatSize(doc.size)} ·{' '}
+                    {doc.pageCount} page{doc.pageCount === 1 ? '' : 's'} · {formatSize(doc.fileSize ?? doc.size)} ·{' '}
                     {new Date(doc.createdAt).toLocaleDateString()}
                   </p>
                   <div className="mt-1.5 flex flex-wrap gap-1.5">

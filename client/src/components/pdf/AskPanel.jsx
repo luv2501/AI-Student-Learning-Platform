@@ -48,7 +48,7 @@ export default function AskPanel({ document: doc }) {
       <div>
         <h2 className="font-semibold tracking-tight text-slate-900">Ask this PDF</h2>
         <p className="mt-0.5 text-sm text-slate-500">
-          Answers come only from <b className="text-slate-700">{doc.originalName}</b>, so they stay on
+          Answers come only from <b className="text-slate-700">{doc.title || doc.originalName}</b>, so they stay on
           topic.
         </p>
       </div>

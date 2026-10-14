@@ -208,10 +208,18 @@ console.log('\nlist + detail');
 {
   const { status, data } = await call('GET', '/documents', { token: tokenA });
   check('lists own documents', status === 200 && data.documents?.length === 1, data.documents?.length);
-  check('reports empty AI flags', data.documents?.[0]?.hasNotes === false && data.documents?.[0]?.hasQuiz === false);
+  const first = data.documents?.[0];
+  check('reports empty AI flags', first?.hasNotes === false && first?.hasFlashcards === false && first?.hasQuiz === false);
+  check('list item has unified metadata', Boolean(first?.title) && typeof first?.fileSize === 'number');
 
   const detail = await call('GET', `/documents/${docId}`, { token: tokenA });
   check('returns one document', detail.status === 200 && detail.data.document?._id === docId);
+  check(
+    'detail has unified metadata and flags',
+    Boolean(detail.data.document?.title) &&
+      typeof detail.data.document?.fileSize === 'number' &&
+      detail.data.document?.hasNotes === false
+  );
 
   const bad = await call('GET', '/documents/not-an-id', { token: tokenA });
   check('malformed id returns 400', bad.status === 400, bad.status);

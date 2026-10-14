@@ -5,6 +5,7 @@ import Select from '../ui/Select.jsx';
 import Textarea from '../ui/Textarea.jsx';
 import Button from '../ui/Button.jsx';
 import Spinner from '../ui/Spinner.jsx';
+import { DEFAULT_TASK_SUBJECT } from '../../lib/constants.js';
 
 /** Turns an ISO date into the yyyy-mm-dd value an <input type="date"> needs. */
 function toDateInput(value) {
@@ -28,7 +29,7 @@ const quickDates = [
 export default function TaskForm({ task, onSave, onCancel, saving }) {
   const [form, setForm] = useState({
     title: task?.title || '',
-    subject: task?.subject === 'General' ? '' : task?.subject || '',
+    subject: task?.subject === DEFAULT_TASK_SUBJECT ? '' : task?.subject || '',
     priority: task?.priority || 'medium',
     dueDate: toDateInput(task?.dueDate),
     description: task?.description || '',
@@ -65,7 +66,7 @@ export default function TaskForm({ task, onSave, onCancel, saving }) {
             id="subject"
             name="subject"
             label="Subject"
-            placeholder="General"
+            placeholder={DEFAULT_TASK_SUBJECT}
             value={form.subject}
             onChange={change}
             maxLength={60}
