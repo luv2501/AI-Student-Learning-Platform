@@ -39,15 +39,16 @@ const multerSingle = multer({
 }).single('file');
 
 /**
- * Validates that the uploaded file begins with PDF magic bytes (%PDF).
+ * Validates that the uploaded file begins with PDF magic bytes (%PDF-).
+ * Magic bytes in hex: 25 50 44 46 2D.
  */
-async function validatePdfHeader(filePath) {
+async function validatePdfMagicBytes(filePath) {
   let fd;
   try {
     fd = await fsp.open(filePath, 'r');
-    const header = Buffer.alloc(4);
-    const { bytesRead } = await fd.read(header, 0, 4, 0);
-    return bytesRead === 4 && header.toString('ascii') === '%PDF';
+    const header = Buffer.alloc(5);
+    const { bytesRead } = await fd.read(header, 0, 5, 0);
+    return bytesRead === 5 && header.toString('ascii') === '%PDF-';
   } catch {
     return false;
   } finally {
@@ -59,12 +60,12 @@ async function validatePdfHeader(filePath) {
  * Enhanced PDF upload middleware:
  * - Checks MIME type and extension
  * - Catches request aborts and errors to remove orphaned disk files
- * - Validates file magic bytes (%PDF) from disk
+ * - Validates file magic bytes (%PDF-) from disk
  */
 export function uploadPdf(req, res, next) {
-  const cleanup = () => {
+  const cleanup = async () => {
     if (req.file?.path) {
-      fsp.unlink(req.file.path).catch(() => {});
+      await fsp.unlink(req.file.path).catch(() => {});
     }
   };
 
@@ -72,7 +73,7 @@ export function uploadPdf(req, res, next) {
 
   multerSingle(req, res, async (err) => {
     if (err) {
-      cleanup();
+      await cleanup();
       return next(err);
     }
 
@@ -80,11 +81,11 @@ export function uploadPdf(req, res, next) {
       return next();
     }
 
-    // Verify magic bytes for real PDF header
-    const isValid = await validatePdfHeader(req.file.path);
+    // Verify magic bytes for real PDF header (%PDF-)
+    const isValid = await validatePdfMagicBytes(req.file.path);
     if (!isValid) {
-      cleanup();
-      return next(apiError(400, 'Invalid PDF file: Missing %PDF header'));
+      await cleanup();
+      return next(apiError(400, 'Invalid file format. Only valid PDF files are allowed.'));
     }
 
     next();

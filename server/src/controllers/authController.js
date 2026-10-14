@@ -10,6 +10,10 @@ export async function register(req, res) {
     throw apiError(400, 'Name, email and password are required');
   }
 
+  if (String(password).length < 8) {
+    throw apiError(400, 'Password must be at least 8 characters');
+  }
+
   const exists = await User.findOne({ email: String(email).toLowerCase() });
   if (exists) throw apiError(409, 'An account with that email already exists');
 
@@ -53,6 +57,9 @@ export async function updateMe(req, res) {
 
   if (newPassword) {
     if (!currentPassword) throw apiError(400, 'Enter your current password to change it');
+    if (String(newPassword).length < 8) {
+      throw apiError(400, 'Password must be at least 8 characters');
+    }
     if (!(await user.matchPassword(currentPassword))) {
       throw apiError(401, 'Current password is incorrect');
     }

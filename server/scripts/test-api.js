@@ -78,10 +78,10 @@ console.log('\nregister');
   check('rejects duplicate email', status === 409, status);
 }
 {
-  const { status } = await call('POST', '/auth/register', {
-    body: { name: 'X', email: 'x@y.com', password: '123' },
+  const { status, data } = await call('POST', '/auth/register', {
+    body: { name: 'X', email: 'x@y.com', password: '1234567' },
   });
-  check('rejects short password', status === 400, status);
+  check('rejects password shorter than 8 characters', status === 400 && /8 characters/i.test(data.message || ''), `${status} ${data.message}`);
 }
 {
   const { status } = await call('POST', '/auth/register', { body: { name: 'X' } });
@@ -141,6 +141,13 @@ console.log('\nprofile update');
   check('needs current password to change password', status === 400, status);
 }
 {
+  const { status, data } = await call('PUT', '/auth/me', {
+    token,
+    body: { currentPassword: student.password, newPassword: 'short' },
+  });
+  check('profile update rejects new password shorter than 8 characters', status === 400 && /8 characters/i.test(data.message || ''), `${status} ${data.message}`);
+}
+{
   const { status } = await call('PUT', '/auth/me', {
     token,
     body: { currentPassword: 'nope', newPassword: 'brandnew1' },
@@ -165,6 +172,23 @@ console.log('\nprofile update');
     body: { email: student.email, password: student.password },
   });
   check('old password no longer works', status === 401, status);
+}
+
+console.log('\nrate limiting');
+{
+  let hitRateLimit = false;
+  let lastStatus = 0;
+  for (let i = 0; i < 15; i++) {
+    const res = await call('POST', '/auth/login', {
+      body: { email: 'ratelimit.test@example.com', password: 'password123' },
+    });
+    lastStatus = res.status;
+    if (res.status === 429) {
+      hitRateLimit = true;
+      break;
+    }
+  }
+  check('auth rate limiter triggers 429 after exceeding limit', hitRateLimit, `last status: ${lastStatus}`);
 }
 
 console.log('\nmisc');

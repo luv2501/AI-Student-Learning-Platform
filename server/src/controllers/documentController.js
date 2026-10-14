@@ -31,9 +31,21 @@ async function removeFile(filePath) {
 export async function uploadDocument(req, res) {
   if (!req.file) throw apiError(400, 'Please choose a PDF file to upload');
 
+  let buffer;
+  try {
+    buffer = await fs.readFile(req.file.path);
+  } catch (err) {
+    await removeFile(req.file.path);
+    throw err;
+  }
+
+  if (!buffer || buffer.length < 5 || buffer.subarray(0, 5).toString('ascii') !== '%PDF-') {
+    await removeFile(req.file.path);
+    throw apiError(400, 'Invalid file format. Only valid PDF files are allowed.');
+  }
+
   let extracted;
   try {
-    const buffer = await fs.readFile(req.file.path);
     extracted = await extractPdfText(buffer);
   } catch (err) {
     await removeFile(req.file.path);

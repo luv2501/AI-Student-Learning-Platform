@@ -37,8 +37,8 @@ export default function Profile() {
     e.preventDefault();
     setStatus({ error: '', success: '' });
 
-    if (passwords.newPassword.length < 6) {
-      return setStatus({ error: 'New password must be at least 6 characters', success: '' });
+    if (passwords.newPassword.length < 8) {
+      return setStatus({ error: 'New password must be at least 8 characters', success: '' });
     }
 
     setSaving('password');
@@ -123,7 +123,7 @@ export default function Profile() {
         </Card>
 
         <Card>
-          <CardHeader title="Change password" subtitle="At least 6 characters" />
+          <CardHeader title="Change password" subtitle="At least 8 characters" />
           <form onSubmit={savePassword} className="mt-4 space-y-4">
             <Input
               id="p-current"

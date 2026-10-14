@@ -30,7 +30,7 @@ export default function Register() {
     e.preventDefault();
     setError('');
 
-    if (form.password.length < 6) return setError('Password must be at least 6 characters');
+    if (form.password.length < 8) return setError('Password must be at least 8 characters');
     if (form.password !== form.confirm) return setError('Passwords do not match');
 
     setSaving(true);
@@ -99,11 +99,11 @@ export default function Register() {
           name="password"
           type="password"
           label="Password"
-          placeholder="At least 6 characters"
+          placeholder="At least 8 characters"
           value={form.password}
           onChange={change}
           autoComplete="new-password"
-          hint={form.password && form.password.length < 6 ? 'A bit longer, please' : ''}
+          hint={form.password && form.password.length < 8 ? 'At least 8 characters required' : ''}
           required
         />
         <Input

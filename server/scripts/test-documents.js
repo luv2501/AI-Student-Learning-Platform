@@ -141,6 +141,21 @@ console.log('\nupload + validation');
   check('rejects a wrong mime type', status === 400, status);
 }
 {
+  const fakePdf = Buffer.from('NOT_A_VALID_PDF_HEADER_DATA');
+  const { status, data } = await call('POST', '/documents', {
+    token: tokenA,
+    form: pdfForm(fakePdf, 'spoofed.pdf', 'application/pdf'),
+  });
+  check(
+    'rejects upload lacking %PDF- magic bytes',
+    status === 400 && data.message === 'Invalid file format. Only valid PDF files are allowed.',
+    `${status} ${data.message}`
+  );
+  const filesOnDisk = fs.existsSync(TEST_UPLOADS) ? fs.readdirSync(TEST_UPLOADS) : [];
+  const leakedFile = filesOnDisk.find((f) => f.endsWith('.pdf') && f !== storedFile);
+  check('spoofed file cleaned up from disk', !leakedFile, leakedFile);
+}
+{
   const big = buildPdf(SENTENCE, 'x'.repeat(11 * 1024 * 1024));
   const { status, data } = await call('POST', '/documents', {
     token: tokenA,
