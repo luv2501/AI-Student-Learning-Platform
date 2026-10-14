@@ -129,6 +129,11 @@ export default function StudyWorkspace() {
           </div>
 
           <div className="flex flex-wrap items-center gap-1.5">
+            {doc.isTruncated && (
+              <Badge tone="amber" title="Document exceeded 200,000 characters; text was trimmed to fit processing limits">
+                Text partially truncated
+              </Badge>
+            )}
             {ready.length > 0 ? (
               ready.map((label) => (
                 <Badge key={label} tone="emerald">

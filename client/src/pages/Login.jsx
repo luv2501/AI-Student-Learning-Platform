@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { Link, useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext.jsx';
 import { apiErrorMessage } from '../lib/api.js';
 import AuthLayout from '../components/AuthLayout.jsx';
@@ -12,7 +12,16 @@ export default function Login() {
   const { login } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
+  const [searchParams] = useSearchParams();
 
+  const isExpired =
+    searchParams.get('expired') === 'true' ||
+    Boolean(location.state?.expired);
+  const initialExpiredMessage =
+    location.state?.message ||
+    (isExpired ? 'Your session expired, please log in again' : '');
+
+  const [expiredNotice, setExpiredNotice] = useState(initialExpiredMessage);
   const [form, setForm] = useState({ email: '', password: '' });
   const [error, setError] = useState('');
   const [saving, setSaving] = useState(false);
@@ -22,6 +31,7 @@ export default function Login() {
   async function submit(e) {
     e.preventDefault();
     setError('');
+    setExpiredNotice('');
     setSaving(true);
     try {
       await login(form);
@@ -47,6 +57,11 @@ export default function Login() {
       }
     >
       <form onSubmit={submit} className="mt-6 space-y-4">
+        {expiredNotice && (
+          <Alert type="warning" onDismiss={() => setExpiredNotice('')}>
+            {expiredNotice}
+          </Alert>
+        )}
         <Alert onDismiss={() => setError('')}>{error}</Alert>
 
         <Input

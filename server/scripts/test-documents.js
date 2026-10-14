@@ -1,7 +1,7 @@
 /**
  * Focused tests for the PDF/document API (phase 4).
  *   npm --prefix server run test:documents
- * AI calls are not exercised — with no ANTHROPIC_API_KEY the endpoints must
+ * AI calls are not exercised — with no AI_API_KEY the endpoints must
  * report a clear "not configured" error instead of failing obscurely.
  */
 import fs from 'node:fs';
@@ -78,11 +78,11 @@ function pdfForm(buffer, filename = 'lecture.pdf', type = 'application/pdf') {
 fs.rmSync(TEST_UPLOADS, { recursive: true, force: true });
 
 const mongo = await MongoMemoryServer.create();
+process.env.NODE_ENV = 'test';
 process.env.MONGO_URI = mongo.getUri('studymind_docs_test');
 process.env.JWT_SECRET = 'test_secret_not_used_in_production';
 process.env.UPLOAD_DIR = TEST_UPLOADS;
 delete process.env.AI_API_KEY; // prove the no-key path is handled
-delete process.env.ANTHROPIC_API_KEY;
 
 const { default: app } = await import('../src/app.js');
 const { default: connectDB } = await import('../src/config/db.js');

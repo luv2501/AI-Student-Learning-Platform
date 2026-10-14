@@ -1,4 +1,5 @@
 import { createContext, useContext, useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import api, { TOKEN_KEY } from '../lib/api.js';
 
 const AuthContext = createContext(null);
@@ -6,6 +7,7 @@ const AuthContext = createContext(null);
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
+  const navigate = useNavigate();
 
   // On first load, restore the session from the stored token.
   useEffect(() => {
@@ -20,6 +22,20 @@ export function AuthProvider({ children }) {
       .catch(() => localStorage.removeItem(TOKEN_KEY))
       .finally(() => setLoading(false));
   }, []);
+
+  // Listen for unauthorized 401 events from axios interceptor
+  useEffect(() => {
+    function handleUnauthorized(e) {
+      setUser(null);
+      const message = e?.detail?.message || 'Your session expired, please log in again';
+      navigate('/login?expired=true', {
+        replace: true,
+        state: { expired: true, message },
+      });
+    }
+    window.addEventListener('auth:unauthorized', handleUnauthorized);
+    return () => window.removeEventListener('auth:unauthorized', handleUnauthorized);
+  }, [navigate]);
 
   function saveSession(data) {
     localStorage.setItem(TOKEN_KEY, data.token);

@@ -1,4 +1,5 @@
 import fs from 'node:fs';
+import fsp from 'node:fs/promises';
 import path from 'node:path';
 import multer from 'multer';
 import apiError from '../utils/apiError.js';
@@ -31,9 +32,61 @@ function fileFilter(req, file, cb) {
   cb(null, true);
 }
 
-/** Accepts a single PDF sent as the "file" form field. */
-export const uploadPdf = multer({
+const multerSingle = multer({
   storage,
   fileFilter,
   limits: { fileSize: MAX_PDF_BYTES, files: 1 },
 }).single('file');
+
+/**
+ * Validates that the uploaded file begins with PDF magic bytes (%PDF).
+ */
+async function validatePdfHeader(filePath) {
+  let fd;
+  try {
+    fd = await fsp.open(filePath, 'r');
+    const header = Buffer.alloc(4);
+    const { bytesRead } = await fd.read(header, 0, 4, 0);
+    return bytesRead === 4 && header.toString('ascii') === '%PDF';
+  } catch {
+    return false;
+  } finally {
+    if (fd) await fd.close().catch(() => {});
+  }
+}
+
+/**
+ * Enhanced PDF upload middleware:
+ * - Checks MIME type and extension
+ * - Catches request aborts and errors to remove orphaned disk files
+ * - Validates file magic bytes (%PDF) from disk
+ */
+export function uploadPdf(req, res, next) {
+  const cleanup = () => {
+    if (req.file?.path) {
+      fsp.unlink(req.file.path).catch(() => {});
+    }
+  };
+
+  req.on('aborted', cleanup);
+
+  multerSingle(req, res, async (err) => {
+    if (err) {
+      cleanup();
+      return next(err);
+    }
+
+    if (!req.file) {
+      return next();
+    }
+
+    // Verify magic bytes for real PDF header
+    const isValid = await validatePdfHeader(req.file.path);
+    if (!isValid) {
+      cleanup();
+      return next(apiError(400, 'Invalid PDF file: Missing %PDF header'));
+    }
+
+    next();
+  });
+}

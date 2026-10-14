@@ -57,6 +57,7 @@ export async function uploadDocument(req, res) {
     pageCount: extracted.pageCount,
     extractedText: extracted.text,
     textLength: extracted.text.length,
+    isTruncated: Boolean(extracted.isTruncated),
   });
 
   res.status(201).json({ document: doc.toPublic() });
@@ -65,22 +66,25 @@ export async function uploadDocument(req, res) {
 /** GET /api/documents */
 export async function listDocuments(req, res) {
   const documents = await Document.find({ user: req.user._id })
-    .select('originalName size pageCount textLength createdAt notes flashcards quiz')
+    .select('originalName fileName size pageCount textLength isTruncated createdAt updatedAt notes flashcards quiz')
     .sort({ createdAt: -1 })
     .lean();
 
-  // Send flags instead of the cached AI payloads to keep the list small.
+  // Send flags instead of the cached AI payloads to keep the list small and coherent with toPublic().
   res.json({
     documents: documents.map((d) => ({
       _id: d._id,
       originalName: d.originalName,
+      fileName: d.fileName,
       size: d.size,
       pageCount: d.pageCount,
       textLength: d.textLength,
+      isTruncated: Boolean(d.isTruncated),
       createdAt: d.createdAt,
+      updatedAt: d.updatedAt,
       hasNotes: Boolean(d.notes),
-      hasFlashcards: d.flashcards?.length > 0,
-      hasQuiz: d.quiz?.length > 0,
+      hasFlashcards: Boolean(d.flashcards?.length > 0),
+      hasQuiz: Boolean(d.quiz?.length > 0),
     })),
   });
 }

@@ -32,6 +32,7 @@ const documentSchema = new mongoose.Schema(
     // Large field: excluded from queries unless asked for with .select('+extractedText')
     extractedText: { type: String, default: '', select: false },
     textLength: { type: Number, default: 0 },
+    isTruncated: { type: Boolean, default: false },
 
     // Cached AI output so the same PDF is not paid for twice
     notes: { type: mongoose.Schema.Types.Mixed, default: null },
@@ -41,10 +42,16 @@ const documentSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
-/** Everything except the bulky extracted text (create() ignores select:false). */
+/** Everything except the bulky extracted text, with standardized presence flags. */
 documentSchema.methods.toPublic = function toPublic() {
   const { extractedText, ...rest } = this.toObject();
-  return rest;
+  return {
+    ...rest,
+    hasNotes: Boolean(this.notes),
+    hasFlashcards: Array.isArray(this.flashcards) && this.flashcards.length > 0,
+    hasQuiz: Array.isArray(this.quiz) && this.quiz.length > 0,
+    isTruncated: Boolean(this.isTruncated),
+  };
 };
 
 export default mongoose.model('Document', documentSchema);

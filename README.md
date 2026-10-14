@@ -11,7 +11,7 @@ dates, turn lecture PDFs into summaries, flashcards and quizzes, and track daily
 | Backend  | Node.js, Express                                      |
 | Database | MongoDB Atlas + Mongoose                              |
 | Auth     | JWT + bcrypt                                          |
-| AI       | Claude API                                            |
+| AI       | Groq / OpenAI-compatible API                          |
 | Uploads  | Multer + PDF text extraction                          |
 
 ## Project structure

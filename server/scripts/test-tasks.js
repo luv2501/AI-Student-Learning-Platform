@@ -34,6 +34,7 @@ async function call(method, path, { body, token } = {}) {
 }
 
 const mongo = await MongoMemoryServer.create();
+process.env.NODE_ENV = 'test';
 process.env.MONGO_URI = mongo.getUri('studymind_tasks_test');
 process.env.JWT_SECRET = 'test_secret_not_used_in_production';
 

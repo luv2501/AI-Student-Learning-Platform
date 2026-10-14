@@ -24,9 +24,12 @@ export async function extractPdfText(buffer) {
     const result = await parser.getText();
     const text = tidy(result?.text);
 
+    const isTruncated = text.length > MAX_TEXT_CHARS;
+
     return {
       text: text.slice(0, MAX_TEXT_CHARS),
       pageCount: result?.total ?? result?.numpages ?? result?.pages?.length ?? 0,
+      isTruncated,
     };
   } catch {
     throw apiError(
