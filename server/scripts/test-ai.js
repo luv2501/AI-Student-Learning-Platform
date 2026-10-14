@@ -61,10 +61,79 @@ process.env.JWT_SECRET = 'test_secret_not_used_in_production';
 const { default: app } = await import('../src/app.js');
 const { default: connectDB } = await import('../src/config/db.js');
 const { default: DocumentModel } = await import('../src/models/Document.js');
-const { aiConfig } = await import('../src/services/aiService.js');
+const {
+  aiConfig,
+  chunkText,
+  rankDenseChunks,
+  rankChunksByQuery,
+  retryWithBackoff,
+} = await import('../src/services/aiService.js');
 
 await connectDB();
 const server = app.listen(PORT);
+
+console.log('\nchunking mechanism');
+{
+  const p1 = 'Paragraph 1: ' + 'Biology notes. '.repeat(400);
+  const p2 = 'Paragraph 2: ' + 'Chemistry notes. '.repeat(400);
+  const p3 = 'Paragraph 3: ' + 'Physics notes. '.repeat(300);
+  const fullText = `${p1}\n\n${p2}\n\n${p3}`;
+
+  const chunks = chunkText(fullText, 8000, 5);
+  check('splits text along paragraph boundaries', chunks.length >= 2);
+  check('first chunk contains paragraph 1', chunks[0].includes('Biology notes'));
+  check('last chunk contains paragraph 3', chunks[chunks.length - 1].includes('Physics notes'));
+
+  const manyParas = Array.from({ length: 15 }, (_, i) => `Section ${i}.\n\n` + 'Text content. '.repeat(600)).join('\n\n');
+  const capped = chunkText(manyParas, 8000, 3);
+  check('enforces maxChunks limit', capped.length === 3);
+
+  const queryRanked = rankChunksByQuery(
+    ['history of ancient rome', 'photosynthesis in chloroplasts', 'quantum mechanics principles'],
+    'Where in the cell does photosynthesis happen?',
+    1
+  );
+  check('ranks relevant chunks by query keywords', queryRanked[0].includes('chloroplasts'));
+
+  const denseRanked = rankDenseChunks(
+    ['repeated word repeated word repeated word', 'Mitochondria generate ATP through cellular respiration in eukaryotic cells'],
+    1
+  );
+  check('ranks information-dense chunks', denseRanked[0].includes('Mitochondria'));
+}
+
+console.log('\nretry helper with exponential backoff');
+{
+  let attempts = 0;
+  const result = await retryWithBackoff(
+    async () => {
+      attempts++;
+      if (attempts < 3) {
+        const err = new Error('AI rate limit reached');
+        err.status = 429;
+        throw err;
+      }
+      return 'recovered';
+    },
+    { maxRetries: 3, initialDelayMs: 20, maxDelayMs: 100 }
+  );
+  check('retries on 429 and succeeds', result === 'recovered' && attempts === 3);
+
+  let nonRetryCalls = 0;
+  try {
+    await retryWithBackoff(
+      async () => {
+        nonRetryCalls++;
+        const err = new Error('Not found');
+        err.status = 404;
+        throw err;
+      },
+      { maxRetries: 3, initialDelayMs: 20 }
+    );
+  } catch (err) {
+    check('does not retry non-retryable errors', nonRetryCalls === 1 && err.status === 404);
+  }
+}
 
 const { data: auth } = await call('POST', '/auth/register', {
   body: { name: 'AI Tester', email: 'ai-test@example.com', password: 'secret123' },

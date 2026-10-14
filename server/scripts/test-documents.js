@@ -56,6 +56,34 @@ function buildPdf(line, padding = '') {
   return Buffer.from(pdf, 'latin1');
 }
 
+/** Builds a multi-line valid PDF containing thousands of lines to test text length bounds. */
+function buildPdfMulti(lines) {
+  let stream = 'BT /F1 14 Tf 50 700 Td\n';
+  for (const l of lines) {
+    stream += '(' + l + ') Tj T*\n';
+  }
+  stream += 'ET';
+  const objects = [
+    '<</Type/Catalog/Pages 2 0 R>>',
+    '<</Type/Pages/Kids[3 0 R]/Count 1>>',
+    '<</Type/Page/Parent 2 0 R/MediaBox[0 0 612 792]/Contents 4 0 R/Resources<</Font<</F1 5 0 R>>>>>>',
+    null,
+    '<</Type/Font/Subtype/Type1/BaseFont/Helvetica>>',
+  ];
+  objects[3] = '<</Length ' + stream.length + '>>stream\n' + stream + '\nendstream';
+  let pdf = '%PDF-1.4\n';
+  const offsets = [];
+  objects.forEach((body, i) => {
+    offsets.push(pdf.length);
+    pdf += `${i + 1} 0 obj\n${body}\nendobj\n`;
+  });
+  const startxref = pdf.length;
+  pdf += `xref\n0 ${objects.length + 1}\n0000000000 65535 f \n`;
+  for (const offset of offsets) pdf += `${String(offset).padStart(10, '0')} 00000 n \n`;
+  pdf += `trailer\n<</Size ${objects.length + 1}/Root 1 0 R>>\nstartxref\n${startxref}\n%%EOF\n`;
+  return Buffer.from(pdf, 'latin1');
+}
+
 async function call(method, path, { body, token, form } = {}) {
   const res = await fetch(BASE + path, {
     method,
@@ -123,6 +151,7 @@ console.log('\nupload + validation');
   check('records a page count', data.document?.pageCount >= 1, data.document?.pageCount);
   check('records extracted text length', data.document?.textLength > 20, data.document?.textLength);
   check('does not leak extracted text', data.document?.extractedText === undefined);
+  check('normal PDF isTruncated is false', data.document?.isTruncated === false);
   docId = data.document?._id;
   storedFile = data.document?.fileName;
 }
@@ -228,6 +257,27 @@ console.log('\ndelete');
   check('deletes own document', status === 200, status);
   check('removes the file from disk', !fs.existsSync(path.join(TEST_UPLOADS, storedFile)));
   check('deleting twice returns 404', (await call('DELETE', `/documents/${docId}`, { token: tokenA })).status === 404);
+}
+
+console.log('\nlong PDF truncation');
+{
+  const tokenC = await signup('docs-c@example.com');
+  const lines = Array.from(
+    { length: 2500 },
+    (_, i) => `Line ${i} Lorem ipsum dolor sit amet consectetur adipiscing elit sed do eiusmod tempor incididunt ut labore`
+  );
+  const truncatedPdf = buildPdfMulti(lines);
+  const { status, data } = await call('POST', '/documents', {
+    token: tokenC,
+    form: pdfForm(truncatedPdf, 'truncated-book.pdf'),
+  });
+  check('accepts long PDF', status === 201, `${status} ${data.message}`);
+  check('flags long PDF as isTruncated: true', data.document?.isTruncated === true, data.document?.isTruncated);
+  check('textLength capped at 200,000', data.document?.textLength === 200000, data.document?.textLength);
+
+  if (data.document?._id) {
+    await call('DELETE', `/documents/${data.document._id}`, { token: tokenC });
+  }
 }
 
 // ---------- teardown ----------

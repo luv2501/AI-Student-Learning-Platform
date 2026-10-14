@@ -24,7 +24,7 @@ export async function extractPdfText(buffer) {
     const result = await parser.getText();
     const text = tidy(result?.text);
 
-    const isTruncated = text.length > MAX_TEXT_CHARS;
+    const isTruncated = text.length >= MAX_TEXT_CHARS;
 
     return {
       text: text.slice(0, MAX_TEXT_CHARS),

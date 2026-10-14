@@ -30,6 +30,7 @@ export default function StudyWorkspace() {
   const [library, setLibrary] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [dismissedTruncation, setDismissedTruncation] = useState(false);
 
   const requested = params.get('tab');
   const tab = tabKeys.includes(requested) ? requested : 'notes';
@@ -130,7 +131,7 @@ export default function StudyWorkspace() {
 
           <div className="flex flex-wrap items-center gap-1.5">
             {doc.isTruncated && (
-              <Badge tone="amber" title="Document exceeded 200,000 characters; text was trimmed to fit processing limits">
+              <Badge tone="amber" title="Document text exceeded processing limits and was partially truncated. Study materials cover the first 200,000 characters.">
                 Text partially truncated
               </Badge>
             )}
@@ -146,6 +147,12 @@ export default function StudyWorkspace() {
           </div>
         </div>
       </div>
+
+      {doc.isTruncated && !dismissedTruncation && (
+        <Alert type="info" onDismiss={() => setDismissedTruncation(true)}>
+          Document text exceeded processing limits and was partially truncated. Study materials cover the first 200,000 characters.
+        </Alert>
+      )}
 
       <Alert type="error" onDismiss={() => setError('')}>
         {error}

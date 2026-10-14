@@ -1,4 +1,4 @@
-﻿import apiError from '../utils/apiError.js';
+import apiError from '../utils/apiError.js';
 
 const MODEL_FALLBACK = 'openai/gpt-oss-20b';
 const DEFAULT_BASE_URL = 'https://api.groq.com/openai/v1';
@@ -18,16 +18,146 @@ export function aiConfig() {
   };
 }
 
-/** Long PDFs are trimmed instead of sent whole, to keep requests fast and cheap. */
-const MAX_INPUT_CHARS = 60_000;
+export const CHUNK_TARGET_SIZE = 8_000;
+export const MAX_CHUNKS = 10;
 
-/** Keeps the start and end of a long document so intros and conclusions survive. */
-function limitText(text) {
+const STOP_WORDS = new Set([
+  'a', 'an', 'and', 'are', 'as', 'at', 'be', 'by', 'for', 'from', 'has', 'he',
+  'in', 'is', 'it', 'its', 'of', 'on', 'that', 'the', 'to', 'was', 'were',
+  'will', 'with', 'what', 'where', 'when', 'who', 'how', 'why', 'which', 'did',
+  'do', 'does', 'can', 'could', 'should', 'would', 'this', 'there', 'their'
+]);
+
+/**
+ * Splits document text into chunks along paragraph boundaries (~8,000 characters per chunk).
+ * Honors a maximum chunk cap (default 10) to respect token budgets and provider limits.
+ */
+export function chunkText(text, targetSize = CHUNK_TARGET_SIZE, maxChunks = MAX_CHUNKS) {
   const clean = String(text || '').trim();
-  if (clean.length <= MAX_INPUT_CHARS) return clean;
+  if (!clean) return [];
+  if (clean.length <= targetSize) return [clean];
 
-  const half = Math.floor(MAX_INPUT_CHARS / 2);
-  return `${clean.slice(0, half)}\n\n[... middle of the document omitted ...]\n\n${clean.slice(-half)}`;
+  const paragraphs = clean.split(/\n\s*\n/);
+  const chunks = [];
+  let current = '';
+
+  for (const para of paragraphs) {
+    if (chunks.length >= maxChunks) break;
+    const trimmed = para.trim();
+    if (!trimmed) continue;
+
+    if (current && current.length + trimmed.length + 2 > targetSize) {
+      chunks.push(current);
+      current = '';
+      if (chunks.length >= maxChunks) break;
+    }
+
+    if (trimmed.length > targetSize) {
+      // Split large paragraph by sentence or newline boundaries
+      const parts = trimmed.split(/(?<=[.?!])\s+|\n+/);
+      for (const part of parts) {
+        const pTrimmed = part.trim();
+        if (!pTrimmed) continue;
+        if (current && current.length + pTrimmed.length + 1 > targetSize) {
+          chunks.push(current);
+          current = '';
+          if (chunks.length >= maxChunks) break;
+        }
+        current = current ? `${current} ${pTrimmed}` : pTrimmed;
+      }
+    } else {
+      current = current ? `${current}\n\n${trimmed}` : trimmed;
+    }
+  }
+
+  if (current && chunks.length < maxChunks) {
+    chunks.push(current);
+  }
+
+  return chunks.slice(0, maxChunks);
+}
+
+/**
+ * Computes information density of chunks based on unique vocabulary ratio and size,
+ * returning the topK most information-dense chunks.
+ */
+export function rankDenseChunks(chunks, topK = 3) {
+  if (chunks.length <= topK) return chunks;
+
+  const scored = chunks.map((chunk, index) => {
+    const words = chunk.toLowerCase().match(/\b[a-z]{3,}\b/g) || [];
+    const unique = new Set(words);
+    const score = (unique.size / Math.max(words.length, 1)) * Math.min(chunk.length, 8000);
+    return { chunk, score, index };
+  });
+
+  scored.sort((a, b) => b.score - a.score || a.index - b.index);
+  return scored.slice(0, topK).map((s) => s.chunk);
+}
+
+/**
+ * Ranks chunks based on keyword overlap with the student's question,
+ * returning only the top relevant chunks for the prompt context.
+ */
+export function rankChunksByQuery(chunks, query, topK = 3) {
+  if (chunks.length <= topK) return chunks;
+
+  const keywords = (String(query || '').toLowerCase().match(/\b[a-z0-9_-]{2,}\b/g) || [])
+    .filter((w) => !STOP_WORDS.has(w));
+
+  if (!keywords.length) return chunks.slice(0, topK);
+
+  const scored = chunks.map((chunk, index) => {
+    const lower = chunk.toLowerCase();
+    let score = 0;
+    for (const kw of keywords) {
+      let count = 0;
+      let pos = 0;
+      while ((pos = lower.indexOf(kw, pos)) !== -1) {
+        count++;
+        pos += kw.length;
+      }
+      score += count;
+    }
+    return { chunk, score, index };
+  });
+
+  scored.sort((a, b) => b.score - a.score || a.index - b.index);
+  return scored.slice(0, topK).map((s) => s.chunk);
+}
+
+/**
+ * Retries an asynchronous function with exponential backoff on HTTP 429 / rate limits.
+ */
+export async function retryWithBackoff(
+  fn,
+  { maxRetries = 3, initialDelayMs = 1000, maxDelayMs = 8000 } = {}
+) {
+  let attempt = 0;
+  while (true) {
+    try {
+      return await fn();
+    } catch (err) {
+      const is429 =
+        err?.status === 429 ||
+        /rate limit/i.test(err?.message || '') ||
+        /429/.test(String(err));
+      const isTransientJson = /Failed to generate JSON/i.test(err?.message || '');
+
+      if ((!is429 && !isTransientJson) || attempt >= maxRetries) {
+        throw err;
+      }
+
+      attempt++;
+      const retryAfterMatch = err?.message?.match(/try again in about (\d+)s/i);
+      const retryAfterSeconds = retryAfterMatch ? Number(retryAfterMatch[1]) : null;
+      const delayMs = retryAfterSeconds
+        ? retryAfterSeconds * 1000
+        : Math.min(initialDelayMs * Math.pow(2, attempt - 1), maxDelayMs);
+
+      await new Promise((resolve) => setTimeout(resolve, delayMs));
+    }
+  }
 }
 
 /** Turns a provider HTTP failure into a clear message for the student. */
@@ -69,8 +199,7 @@ function providerError(status, retryAfter, body) {
 
 /**
  * One place where every AI request is made (OpenAI-compatible chat completions).
- * maxTokens is deliberately modest: providers count the requested completion
- * tokens against per-minute limits, and free tiers are small.
+ * Uses retryWithBackoff on 429 errors.
  */
 async function askAI({ system, prompt, maxTokens = 3000, json = false }) {
   const { apiKey, baseURL, model, bearer } = aiConfig();
@@ -79,57 +208,54 @@ async function askAI({ system, prompt, maxTokens = 3000, json = false }) {
     throw apiError(503, 'AI features are not configured on the server. Set AI_API_KEY in server/.env');
   }
 
-  let response;
-  try {
-    response = await fetch(`${baseURL}/chat/completions`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        ...(bearer ? { Authorization: `Bearer ${apiKey}` } : { 'x-api-key': apiKey }),
-      },
-      body: JSON.stringify({
-        model,
-        max_completion_tokens: maxTokens,
-        temperature: 0.3,
-        // Lets the provider guarantee syntactically valid JSON for the
-        // notes / flashcards / quiz prompts.
-        ...(json ? { response_format: { type: 'json_object' } } : {}),
-        // gpt-oss models spend completion tokens on reasoning before answering;
-        // keeping that low leaves the budget for the actual JSON output.
-        ...(/gpt-oss/i.test(model) ? { reasoning_effort: 'low' } : {}),
-        messages: [
-          { role: 'system', content: system },
-          { role: 'user', content: prompt },
-        ],
-      }),
-      signal: AbortSignal.timeout(120_000),
-    });
-  } catch (err) {
-    throw apiError(
-      502,
-      err.name === 'TimeoutError'
-        ? 'The AI service took too long to respond. Please try again.'
-        : 'Could not reach the AI service. Please try again.'
-    );
-  }
+  return retryWithBackoff(async () => {
+    let response;
+    try {
+      response = await fetch(`${baseURL}/chat/completions`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(bearer ? { Authorization: `Bearer ${apiKey}` } : { 'x-api-key': apiKey }),
+        },
+        body: JSON.stringify({
+          model,
+          max_completion_tokens: maxTokens,
+          temperature: 0.3,
+          ...(json ? { response_format: { type: 'json_object' } } : {}),
+          ...(/gpt-oss/i.test(model) ? { reasoning_effort: 'low' } : {}),
+          messages: [
+            { role: 'system', content: system },
+            { role: 'user', content: prompt },
+          ],
+        }),
+        signal: AbortSignal.timeout(120_000),
+      });
+    } catch (err) {
+      throw apiError(
+        502,
+        err.name === 'TimeoutError'
+          ? 'The AI service took too long to respond. Please try again.'
+          : 'Could not reach the AI service. Please try again.'
+      );
+    }
 
-  if (!response.ok) {
-    throw providerError(response.status, response.headers.get('retry-after'), await response.text());
-  }
+    if (!response.ok) {
+      throw providerError(response.status, response.headers.get('retry-after'), await response.text());
+    }
 
-  const data = await response.json().catch(() => null);
-  const text = String(data?.choices?.[0]?.message?.content || '').trim();
+    const data = await response.json().catch(() => null);
+    const text = String(data?.choices?.[0]?.message?.content || '').trim();
 
-  if (!text) {
-    // Reasoning models can burn the whole token budget before writing an answer.
-    throw apiError(
-      502,
-      data?.choices?.[0]?.finish_reason === 'length'
-        ? 'The AI ran out of tokens before finishing. Please try again.'
-        : 'The AI returned an empty response. Please try again.'
-    );
-  }
-  return text;
+    if (!text) {
+      throw apiError(
+        502,
+        data?.choices?.[0]?.finish_reason === 'length'
+          ? 'The AI ran out of tokens before finishing. Please try again.'
+          : 'The AI returned an empty response. Please try again.'
+      );
+    }
+    return text;
+  });
 }
 
 /** The model is asked for JSON only, but code fences still get stripped defensively. */
@@ -161,6 +287,44 @@ function firstArray(data) {
 
 /** Structured study notes: { summary, keyPoints[], sections[] } */
 export async function generateNotes(text) {
+  const chunks = chunkText(text);
+
+  let contentToSynthesize = text;
+
+  if (chunks.length > 1) {
+    // Multi-chunk: summarize each chunk sequentially to respect rate limits, then merge
+    const chunkSummaries = [];
+    for (let i = 0; i < chunks.length; i++) {
+      const raw = await askAI({
+        json: true,
+        system: `You are a study assistant that extracts key revision notes from a document section. ${JSON_ONLY}`,
+        prompt: `Extract key facts and takeaways from part ${i + 1} of ${chunks.length}.
+Return JSON:
+{
+  "sectionSummary": "brief 1-2 sentence overview",
+  "points": ["important bullet points"]
+}
+
+DOCUMENT PART:
+${chunks[i]}`,
+      });
+
+      const parsed = parseJson(raw, 'chunk summary');
+      const sectionSummary = String(parsed.sectionSummary || '').trim();
+      const points = Array.isArray(parsed.points)
+        ? parsed.points.map((p) => String(p).trim()).filter(Boolean)
+        : [];
+      chunkSummaries.push({ sectionSummary, points });
+    }
+
+    contentToSynthesize = chunkSummaries
+      .map(
+        (cs, i) =>
+          `Section ${i + 1}: ${cs.sectionSummary}\nPoints:\n${cs.points.map((p) => `- ${p}`).join('\n')}`
+      )
+      .join('\n\n');
+  }
+
   const raw = await askAI({
     json: true,
     system: `You are a study assistant that turns lecture material into concise revision notes for a student. ${JSON_ONLY}`,
@@ -176,7 +340,7 @@ Return this exact JSON shape:
 Rules: 5-8 key points, 3-6 sections, each section 2-5 bullets. Keep every bullet under 25 words and use only information from the document.
 
 DOCUMENT:
-${limitText(text)}`,
+${contentToSynthesize}`,
   });
 
   const data = parseJson(raw, 'notes');
@@ -197,6 +361,12 @@ ${limitText(text)}`,
 
 /** Flashcards: [{ question, answer }] */
 export async function generateFlashcards(text, count = 12) {
+  const chunks = chunkText(text);
+  const context =
+    chunks.length <= 1
+      ? chunks[0] || text
+      : rankDenseChunks(chunks, 3).join('\n\n--- Next Section ---\n\n');
+
   const raw = await askAI({
     json: true,
     system: `You are a study assistant that writes flashcards for exam revision. ${JSON_ONLY}`,
@@ -207,7 +377,7 @@ Return a JSON array: [{ "question": "...", "answer": "..." }]
 Rules: one idea per card, questions short and specific, answers under 40 words, cover the whole document, use only information from it.
 
 DOCUMENT:
-${limitText(text)}`,
+${context}`,
   });
 
   const data = parseJson(raw, 'flashcards');
@@ -226,6 +396,12 @@ ${limitText(text)}`,
 
 /** Quiz: [{ question, options[], correctIndex, explanation }] */
 export async function generateQuiz(text, count = 8) {
+  const chunks = chunkText(text);
+  const context =
+    chunks.length <= 1
+      ? chunks[0] || text
+      : rankDenseChunks(chunks, 3).join('\n\n--- Next Section ---\n\n');
+
   const raw = await askAI({
     json: true,
     system: `You are a study assistant that writes multiple choice practice questions. ${JSON_ONLY}`,
@@ -237,7 +413,7 @@ Return a JSON array:
 Rules: exactly 4 options per question, only one correct, correctIndex is 0-based, plausible wrong options, explanation under 30 words, use only information from the document.
 
 DOCUMENT:
-${limitText(text)}`,
+${context}`,
   });
 
   const data = parseJson(raw, 'quiz');
@@ -265,12 +441,18 @@ ${limitText(text)}`,
 
 /** Answers a student question using only the document text. */
 export async function answerQuestion(text, question) {
+  const chunks = chunkText(text);
+  const context =
+    chunks.length <= 1
+      ? chunks[0] || text
+      : rankChunksByQuery(chunks, question, 3).join('\n\n---\n\n');
+
   const answer = await askAI({
     maxTokens: 2000,
     system:
       'You answer student questions using only the document provided. If the answer is not in the document, say so plainly instead of guessing. Answer in clear plain text, at most 200 words. Do not use markdown.',
     prompt: `DOCUMENT:
-${limitText(text)}
+${context}
 
 STUDENT QUESTION: ${question}`,
   });
