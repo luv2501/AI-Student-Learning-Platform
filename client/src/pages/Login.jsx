@@ -6,7 +6,6 @@ import AuthLayout from '../components/AuthLayout.jsx';
 import Input from '../components/ui/Input.jsx';
 import Button from '../components/ui/Button.jsx';
 import Alert from '../components/ui/Alert.jsx';
-import Spinner from '../components/ui/Spinner.jsx';
 
 export default function Login() {
   const { login } = useAuth();
@@ -19,7 +18,7 @@ export default function Login() {
     Boolean(location.state?.expired);
   const initialExpiredMessage =
     location.state?.message ||
-    (isExpired ? 'Your session expired, please log in again' : '');
+    (isExpired ? 'Your session expired. Please log in again.' : '');
 
   const [expiredNotice, setExpiredNotice] = useState(initialExpiredMessage);
   const [form, setForm] = useState({ email: '', password: '' });
@@ -46,14 +45,14 @@ export default function Login() {
   return (
     <AuthLayout
       title="Welcome back"
-      subtitle="Log in to pick up your study plan."
+      subtitle="Enter your student credentials to access your library."
       footer={
-        <>
-          New here?{' '}
-          <Link to="/register" className="font-medium text-indigo-600 hover:underline">
+        <p className="text-xs text-secondary">
+          New to FileSense?{' '}
+          <Link to="/register" className="font-medium text-accent hover:underline">
             Create an account
           </Link>
-        </>
+        </p>
       }
     >
       <form onSubmit={submit} className="mt-6 space-y-4">
@@ -62,14 +61,18 @@ export default function Login() {
             {expiredNotice}
           </Alert>
         )}
-        <Alert onDismiss={() => setError('')}>{error}</Alert>
+        {error && (
+          <Alert type="danger" onDismiss={() => setError('')}>
+            {error}
+          </Alert>
+        )}
 
         <Input
           id="email"
           name="email"
           type="email"
-          label="Email"
-          placeholder="you@example.com"
+          label="Email address"
+          placeholder="student@university.edu"
           value={form.email}
           onChange={change}
           autoComplete="email"
@@ -84,13 +87,21 @@ export default function Login() {
           value={form.password}
           onChange={change}
           autoComplete="current-password"
+          showPasswordToggle
           required
         />
 
-        <Button type="submit" fullWidth disabled={saving}>
-          {saving && <Spinner />}
-          {saving ? 'Logging in...' : 'Log in'}
-        </Button>
+        <div className="pt-2">
+          <Button
+            type="submit"
+            variant="primary"
+            size="md"
+            fullWidth
+            loading={saving}
+          >
+            {saving ? 'Signing in...' : 'Sign in'}
+          </Button>
+        </div>
       </form>
     </AuthLayout>
   );

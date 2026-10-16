@@ -6,7 +6,6 @@ import AuthLayout from '../components/AuthLayout.jsx';
 import Input from '../components/ui/Input.jsx';
 import Button from '../components/ui/Button.jsx';
 import Alert from '../components/ui/Alert.jsx';
-import Spinner from '../components/ui/Spinner.jsx';
 
 export default function Register() {
   const { register } = useAuth();
@@ -25,20 +24,25 @@ export default function Register() {
   const change = (e) => setForm({ ...form, [e.target.name]: e.target.value });
 
   const mismatch = form.confirm.length > 0 && form.password !== form.confirm;
+  const passwordTooShort = form.password.length > 0 && form.password.length < 8;
 
   async function submit(e) {
     e.preventDefault();
     setError('');
 
-    if (form.password.length < 8) return setError('Password must be at least 8 characters');
-    if (form.password !== form.confirm) return setError('Passwords do not match');
+    if (form.password.length < 8) {
+      return setError('Password must be at least 8 characters');
+    }
+    if (form.password !== form.confirm) {
+      return setError('Passwords do not match');
+    }
 
     setSaving(true);
     try {
       await register({
-        name: form.name,
-        email: form.email,
-        institution: form.institution,
+        name: form.name.trim(),
+        email: form.email.trim(),
+        institution: form.institution.trim(),
         password: form.password,
       });
       navigate('/dashboard', { replace: true });
@@ -52,18 +56,22 @@ export default function Register() {
   return (
     <AuthLayout
       title="Create your account"
-      subtitle="Free, and takes about 20 seconds."
+      subtitle="Start turning course materials into structured study sets."
       footer={
-        <>
-          Already registered?{' '}
-          <Link to="/login" className="font-medium text-indigo-600 hover:underline">
-            Log in
+        <p className="text-xs text-secondary">
+          Already have an account?{' '}
+          <Link to="/login" className="font-medium text-accent hover:underline">
+            Sign in
           </Link>
-        </>
+        </p>
       }
     >
       <form onSubmit={submit} className="mt-6 space-y-4">
-        <Alert onDismiss={() => setError('')}>{error}</Alert>
+        {error && (
+          <Alert type="danger" onDismiss={() => setError('')}>
+            {error}
+          </Alert>
+        )}
 
         <Input
           id="name"
@@ -79,8 +87,8 @@ export default function Register() {
           id="email"
           name="email"
           type="email"
-          label="Email"
-          placeholder="you@example.com"
+          label="Email address"
+          placeholder="student@university.edu"
           value={form.email}
           onChange={change}
           autoComplete="email"
@@ -89,10 +97,11 @@ export default function Register() {
         <Input
           id="institution"
           name="institution"
-          label="School or college"
+          label="University or institution"
           placeholder="Optional"
           value={form.institution}
           onChange={change}
+          autoComplete="organization"
         />
         <Input
           id="password"
@@ -103,7 +112,9 @@ export default function Register() {
           value={form.password}
           onChange={change}
           autoComplete="new-password"
-          hint={form.password && form.password.length < 8 ? 'At least 8 characters required' : ''}
+          showPasswordToggle
+          hint={!passwordTooShort ? 'Use at least 8 characters' : ''}
+          error={passwordTooShort ? 'Must be at least 8 characters' : ''}
           required
         />
         <Input
@@ -115,14 +126,22 @@ export default function Register() {
           value={form.confirm}
           onChange={change}
           autoComplete="new-password"
+          showPasswordToggle
           error={mismatch ? 'Passwords do not match' : ''}
           required
         />
 
-        <Button type="submit" fullWidth disabled={saving}>
-          {saving && <Spinner />}
-          {saving ? 'Creating account...' : 'Create account'}
-        </Button>
+        <div className="pt-2">
+          <Button
+            type="submit"
+            variant="primary"
+            size="md"
+            fullWidth
+            loading={saving}
+          >
+            {saving ? 'Creating account...' : 'Create account'}
+          </Button>
+        </div>
       </form>
     </AuthLayout>
   );

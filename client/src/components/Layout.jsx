@@ -55,7 +55,7 @@ export default function Layout() {
           <div className="mx-auto flex max-w-6xl flex-col items-center justify-between gap-3 px-4 py-6 text-xs text-muted sm:flex-row sm:px-6">
             <Logo className="opacity-80" />
             <p className="font-mono">
-              © {new Date().getFullYear()} FileSense — Understand every document
+              © {new Date().getFullYear()} FileSense. Understand every document.
             </p>
           </div>
         </footer>
