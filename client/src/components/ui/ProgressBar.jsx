@@ -1,29 +1,30 @@
 const tones = {
-  indigo: 'bg-indigo-600',
-  emerald: 'bg-emerald-500',
-  amber: 'bg-amber-500',
+  indigo: 'bg-accent',
+  emerald: 'bg-success',
+  amber: 'bg-warning',
 };
 
 export default function ProgressBar({ value = 0, tone = 'indigo', className = '', label }) {
   const pct = Math.max(0, Math.min(100, Math.round(value)));
+  const toneClass = tones[tone] || tones.indigo;
 
   return (
     <div className={className}>
       {label && (
-        <div className="mb-1.5 flex items-center justify-between text-sm">
-          <span className="font-medium text-slate-700">{label}</span>
-          <span className="text-slate-500">{pct}%</span>
+        <div className="mb-1.5 flex items-center justify-between text-xs">
+          <span className="font-medium text-primary">{label}</span>
+          <span className="font-mono text-muted">{pct}%</span>
         </div>
       )}
       <div
-        className="h-2 w-full overflow-hidden rounded-full bg-slate-100"
+        className="h-1.5 w-full overflow-hidden rounded-xs bg-subtle border border-border-subtle/40"
         role="progressbar"
         aria-valuenow={pct}
         aria-valuemin={0}
         aria-valuemax={100}
       >
         <div
-          className={`h-full rounded-full transition-all duration-500 ease-out ${tones[tone]}`}
+          className={`h-full rounded-xs transition-all duration-500 ease-out ${toneClass}`}
           style={{ width: `${pct}%` }}
         />
       </div>
@@ -34,7 +35,7 @@ export default function ProgressBar({ value = 0, tone = 'indigo', className = ''
 /** Circular variant used on the dashboard. */
 export function ProgressRing({ value = 0, size = 88, children }) {
   const pct = Math.max(0, Math.min(100, Math.round(value)));
-  const stroke = 8;
+  const stroke = 6;
   const radius = (size - stroke) / 2;
   const circumference = 2 * Math.PI * radius;
 
@@ -46,7 +47,7 @@ export function ProgressRing({ value = 0, size = 88, children }) {
           cy={size / 2}
           r={radius}
           fill="none"
-          stroke="#e2e8f0"
+          stroke="var(--border-subtle)"
           strokeWidth={stroke}
         />
         <circle
@@ -54,7 +55,7 @@ export function ProgressRing({ value = 0, size = 88, children }) {
           cy={size / 2}
           r={radius}
           fill="none"
-          stroke="#4f46e5"
+          stroke="var(--accent)"
           strokeWidth={stroke}
           strokeLinecap="round"
           strokeDasharray={circumference}
@@ -62,7 +63,7 @@ export function ProgressRing({ value = 0, size = 88, children }) {
           style={{ transition: 'stroke-dashoffset 700ms cubic-bezier(0.22, 1, 0.36, 1)' }}
         />
       </svg>
-      <div className="absolute inset-0 grid place-items-center text-center">{children}</div>
+      <div className="absolute inset-0 grid place-items-center text-center font-mono">{children}</div>
     </div>
   );
 }

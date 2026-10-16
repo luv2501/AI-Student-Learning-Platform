@@ -6,7 +6,7 @@ export default function SegmentedTabs({ items, value, onChange, className = '' }
   return (
     <div
       role="tablist"
-      className={`sm-scroll flex gap-1 overflow-x-auto rounded-xl border border-slate-200 bg-white p-1 shadow-sm ${className}`}
+      className={`sm-scroll flex gap-1 overflow-x-auto rounded-lg border border-border-subtle bg-subtle p-1 ${className}`}
     >
       {items.map((item) => {
         const active = item.key === value;
@@ -17,17 +17,19 @@ export default function SegmentedTabs({ items, value, onChange, className = '' }
             aria-selected={active}
             type="button"
             onClick={() => onChange(item.key)}
-            className={`flex flex-1 shrink-0 items-center justify-center gap-2 whitespace-nowrap rounded-lg px-3 py-2 text-sm font-medium transition-all duration-150 ${
+            className={`flex flex-1 shrink-0 cursor-pointer items-center justify-center gap-2 whitespace-nowrap rounded-md px-3 py-1.5 text-xs font-medium transition-colors duration-150 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-accent ${
               active
-                ? 'bg-indigo-600 text-white shadow-sm'
-                : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
+                ? 'bg-surface text-primary shadow-xs border border-border-subtle/60'
+                : 'text-secondary hover:text-primary hover:bg-surface/40'
             }`}
           >
-            {item.label}
-            {item.badge && (
+            <span>{item.label}</span>
+            {item.badge !== undefined && item.badge !== null && (
               <span
-                className={`rounded-full px-1.5 py-0.5 text-[10px] font-semibold ${
-                  active ? 'bg-white/20 text-white' : 'bg-slate-100 text-slate-500'
+                className={`font-mono rounded-xs px-1.5 py-0.2 text-[10px] font-medium ${
+                  active
+                    ? 'bg-subtle text-primary border border-border-subtle/80'
+                    : 'bg-surface/60 text-muted'
                 }`}
               >
                 {item.badge}

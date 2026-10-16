@@ -1,15 +1,17 @@
 const tones = {
-  slate: 'bg-slate-100 text-slate-700',
-  indigo: 'bg-indigo-50 text-indigo-700',
-  emerald: 'bg-emerald-50 text-emerald-700',
-  amber: 'bg-amber-50 text-amber-700',
-  rose: 'bg-rose-50 text-rose-700',
+  slate: 'bg-subtle text-secondary border-border-subtle',
+  indigo: 'bg-accent-subtle text-accent border-accent/25',
+  emerald: 'bg-success-subtle text-success border-success/25',
+  amber: 'bg-warning-subtle text-warning border-warning/25',
+  rose: 'bg-danger-subtle text-danger border-danger/25',
 };
 
 export default function Badge({ tone = 'slate', className = '', children }) {
+  const toneClass = tones[tone] || tones.slate;
+
   return (
     <span
-      className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium ${tones[tone]} ${className}`}
+      className={`inline-flex items-center gap-1 rounded-sm border px-1.5 py-0.5 text-xs font-medium tracking-tight ${toneClass} ${className}`}
     >
       {children}
     </span>

@@ -10,9 +10,9 @@ export default function Spinner({ className = '' }) {
 
 export function PageLoader({ label = 'Loading...' }) {
   return (
-    <div className="animate-fade-in flex flex-col items-center justify-center gap-3 py-20 text-slate-500">
-      <Spinner className="h-6 w-6 text-indigo-500" />
-      <span className="text-sm">{label}</span>
+    <div className="animate-fade-in flex flex-col items-center justify-center gap-3 py-20 text-secondary">
+      <Spinner className="h-5 w-5 text-accent" />
+      <span className="text-xs font-medium">{label}</span>
     </div>
   );
 }
@@ -25,13 +25,13 @@ export function ThinkingState({ label = 'The AI is working on it', hint = 'This 
         {[0, 1, 2].map((i) => (
           <span
             key={i}
-            className="h-2.5 w-2.5 animate-bounce rounded-full bg-indigo-500"
+            className="h-2 w-2 animate-bounce rounded-full bg-accent"
             style={{ animationDelay: `${i * 140}ms` }}
           />
         ))}
       </div>
-      <p className="text-sm font-medium text-slate-700">{label}</p>
-      <p className="text-xs text-slate-500">{hint}</p>
+      <p className="text-xs font-medium text-primary">{label}</p>
+      <p className="text-xs text-muted">{hint}</p>
     </div>
   );
 }

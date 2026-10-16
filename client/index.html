@@ -29,12 +29,29 @@
     />
     <meta name="twitter:image" content="/logo.svg" />
 
+    <!-- Google Fonts: Public Sans (UI/Body) & Geist Mono (Code/Stats) -->
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
-      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"
+      href="https://fonts.googleapis.com/css2?family=Geist+Mono:wght@400;500;600&family=Public+Sans:ital,wght@0,300..800;1,300..800&display=swap"
       rel="stylesheet"
     />
+
+    <!-- Zero-FOUC Dark Mode Pre-Render Script -->
+    <script>
+      (function() {
+        try {
+          var stored = localStorage.getItem('filesense_theme');
+          var isDark = stored === 'dark' || (!stored && window.matchMedia('(prefers-color-scheme: dark)').matches);
+          if (isDark) {
+            document.documentElement.classList.add('dark');
+          } else {
+            document.documentElement.classList.remove('dark');
+          }
+        } catch (e) {}
+      })();
+    </script>
+
     <title>FileSense — Understand every document</title>
   </head>
   <body>

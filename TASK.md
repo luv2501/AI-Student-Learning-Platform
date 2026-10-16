@@ -5,19 +5,21 @@
 ---
 
 ## Task 4.1: Foundation — Design Tokens, Typography & Dark Mode Engine
-- [ ] Install required frontend dependencies (`lucide-react`, `sonner`, `clsx`, `tailwind-merge` if needed).
-- [ ] Configure `client/index.html`:
-  - [ ] Import Google Fonts: `Public Sans` and `Geist Mono`.
-  - [ ] Add blocking inline theme script in `<head>` to prevent FOUC (reads `localStorage` and `prefers-color-scheme`).
-- [ ] Configure `client/src/index.css`:
-  - [ ] Define `:root` semantic tokens (`--bg-base`, `--bg-surface`, `--text-primary`, `--border-subtle`, `--accent`, etc.).
-  - [ ] Define `.dark` semantic tokens for slate/graphite dark mode.
-  - [ ] Map typography families (`font-sans`, `font-mono`).
-- [ ] Create `client/src/context/ThemeContext.jsx`:
-  - [ ] Provide `theme` (`'light' | 'dark' | 'system'`), `resolvedTheme`, and `setTheme`.
-  - [ ] Persist selection to `localStorage.setItem('filesense_theme', theme)`.
-  - [ ] Synchronize `window.matchMedia('(prefers-color-scheme: dark)')` listener.
-- [ ] Create `ThemeToggle.jsx` component with accessible dropdown or toggle button.
+- [x] Install required frontend dependencies (`lucide-react`, `sonner`, `clsx`, `tailwind-merge` if needed).
+- [x] Configure `client/index.html`:
+  - [x] Import Google Fonts: `Public Sans` and `Geist Mono`.
+  - [x] Add blocking inline theme script in `<head>` to prevent FOUC (reads `localStorage` and `prefers-color-scheme`).
+- [x] Configure `client/src/index.css`:
+  - [x] Define `:root` semantic tokens (`--bg-base`, `--bg-surface`, `--text-primary`, `--border-subtle`, `--accent`, etc.).
+  - [x] Define `.dark` semantic tokens for slate/graphite dark mode.
+  - [x] Map typography families (`font-sans`, `font-mono`).
+  - [x] Micro-radii tokens (`--radius-xs` through `--radius-2xl`).
+- [x] Create `client/src/context/ThemeContext.jsx`:
+  - [x] Provide `theme` (`'light' | 'dark' | 'system'`), `resolvedTheme`, and `setTheme`.
+  - [x] Persist selection to `localStorage.setItem('filesense_theme', theme)`.
+  - [x] Synchronize `window.matchMedia('(prefers-color-scheme: dark)')` listener.
+- [x] Create `ThemeToggle.jsx` component with accessible dropdown or toggle button.
+- [x] Refactor all 13 foundational UI components in `client/src/components/ui/*` (`Alert`, `Badge`, `Button`, `Card`, `EmptyState`, `Input`, `ProgressBar`, `SegmentedTabs`, `Select`, `Skeleton`, `Spinner`, `StatCard`, `Textarea`) to consume semantic design tokens with 100% preserved API contracts.
 
 ---
 

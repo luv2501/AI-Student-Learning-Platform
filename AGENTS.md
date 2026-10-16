@@ -47,11 +47,11 @@ When making non-trivial architectural, structural, or dependency decisions, docu
 - **Alternatives Considered**: FontAwesome (too heavy, dated), React Hot Toast (less refined styling control).
 - **Impact**: All client views will use consistent SVG icons and centralized toast triggers.
 
-### [2026-10-16] - CSS Custom Properties for Dark Mode
-- **Context**: Need zero-flicker dark mode without complex JavaScript runtime overhead.
-- **Decision**: Define semantic variables on `:root` and `.dark` in `client/src/index.css`, paired with an inline `<script>` in `index.html` head.
-- **Alternatives Considered**: Tailwind `dark:` utility prefix everywhere (cumbersome for background layers and causes high risk of missed states).
-- **Impact**: Full theme synchronization with system preferences and `localStorage`.
+### [2026-10-17] - Tailwind v4 Design Tokens & Micro-Radii Component System
+- **Context**: Task 4.1 requires a high-utility, anti-vibecode design token system with zero FOUC, Public Sans + Geist Mono typography, and micro-radii across all UI components.
+- **Decision**: Configured Tailwind v4 `@theme` mappings for surfaces, borders, text inks, and micro-radii (`2px`-`12px`). Refactored all 13 UI primitives (`Alert`, `Badge`, `Button`, `Card`, `EmptyState`, `Input`, `ProgressBar`, `SegmentedTabs`, `Select`, `Skeleton`, `Spinner`, `StatCard`, `Textarea`) to consume semantic tokens while preserving 100% of their prop APIs and event handlers. Replaced emoji placeholders with Lucide icons.
+- **Alternatives Considered**: Retaining ad-hoc slate/indigo hex values (causes dark mode breakage and inconsistent border radii).
+- **Impact**: All 13 UI primitives support theme tokens natively; verified clean Vite production build and server test suites passing.
 
 ---
 
