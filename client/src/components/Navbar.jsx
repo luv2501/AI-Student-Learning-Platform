@@ -47,11 +47,11 @@ export function Logo({ className = '', markOnly = false, fullSvg = false, showTa
         className="h-8 w-auto shrink-0 object-contain"
       />
       <span className="flex flex-col text-left">
-        <span className="text-lg font-bold tracking-tight text-slate-900 leading-none">
+        <span className="text-lg font-bold tracking-tight text-primary leading-none">
           FileSense
         </span>
         {showTagline && (
-          <span className="mt-0.5 text-[10px] font-medium tracking-wider text-slate-500 uppercase">
+          <span className="mt-0.5 text-[10px] font-medium tracking-wider text-muted uppercase">
             Understand every document
           </span>
         )}
