@@ -14,13 +14,48 @@ const linkClass = ({ isActive }) =>
     isActive ? 'bg-indigo-50 text-indigo-700' : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
   }`;
 
-export function Logo({ className = '' }) {
-  return (
-    <span className={`flex items-center gap-2 ${className}`}>
-      <span className="grid h-8 w-8 place-items-center rounded-lg bg-gradient-to-br from-indigo-500 to-violet-600 text-sm font-bold text-white shadow-sm shadow-indigo-600/30">
-        FS
+export function Logo({ className = '', markOnly = false, fullSvg = false, showTagline = false }) {
+  if (markOnly) {
+    return (
+      <span className={`inline-flex items-center ${className}`}>
+        <img
+          src="/logo-mark.svg"
+          alt="FileSense logo"
+          className="h-8 w-auto object-contain"
+        />
       </span>
-      <span className="text-lg font-semibold tracking-tight text-slate-900">FileSense</span>
+    );
+  }
+
+  if (fullSvg) {
+    return (
+      <span className={`inline-flex items-center ${className}`}>
+        <img
+          src="/logo.svg"
+          alt="FileSense logo"
+          className="h-8 w-auto object-contain"
+        />
+      </span>
+    );
+  }
+
+  return (
+    <span className={`inline-flex items-center gap-2.5 ${className}`}>
+      <img
+        src="/logo-mark.svg"
+        alt="FileSense logo"
+        className="h-8 w-auto shrink-0 object-contain"
+      />
+      <span className="flex flex-col text-left">
+        <span className="text-lg font-bold tracking-tight text-slate-900 leading-none">
+          FileSense
+        </span>
+        {showTagline && (
+          <span className="mt-0.5 text-[10px] font-medium tracking-wider text-slate-500 uppercase">
+            Understand every document
+          </span>
+        )}
+      </span>
     </span>
   );
 }
