@@ -1,4 +1,15 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import { toast } from 'sonner';
+import {
+  Layers,
+  Shuffle,
+  RotateCcw,
+  RefreshCw,
+  Check,
+  RotateCw,
+  ChevronLeft,
+  ChevronRight,
+} from 'lucide-react';
 import Card from '../ui/Card.jsx';
 import Button from '../ui/Button.jsx';
 import Badge from '../ui/Badge.jsx';
@@ -31,7 +42,13 @@ export default function FlashcardsPanel({ document: doc, onGenerated }) {
 
   const mark = useCallback(
     (value) => {
-      setKnown((k) => ({ ...k, [index]: value }));
+      setKnown((k) => {
+        const next = { ...k, [index]: value };
+        if (Object.keys(next).length === deck.length && deck.length > 0) {
+          toast.success('Flashcard session complete! All cards reviewed.');
+        }
+        return next;
+      });
       if (index < deck.length - 1) move(1);
     },
     [index, deck.length, move]
@@ -60,7 +77,7 @@ export default function FlashcardsPanel({ document: doc, onGenerated }) {
   if (!cards) {
     return (
       <GeneratePrompt
-        icon="🃏"
+        icon={Layers}
         title="Flashcards"
         text="Generate question and answer cards from this PDF, then flip through them to test your recall."
         label="Generate flashcards"
@@ -86,6 +103,7 @@ export default function FlashcardsPanel({ document: doc, onGenerated }) {
     setIndex(0);
     setFlipped(false);
     setKnown({});
+    toast.info('Deck shuffled');
   }
 
   function reset() {
@@ -93,6 +111,7 @@ export default function FlashcardsPanel({ document: doc, onGenerated }) {
     setIndex(0);
     setFlipped(false);
     setKnown({});
+    toast.info('Session reset');
   }
 
   return (
@@ -103,16 +122,18 @@ export default function FlashcardsPanel({ document: doc, onGenerated }) {
       onDismissError={() => setError('')}
       actions={
         <>
-          <Button variant="secondary" size="sm" onClick={shuffle}>
+          <Button variant="secondary" size="xs" onClick={shuffle} className="gap-1">
+            <Shuffle className="h-3.5 w-3.5" aria-hidden="true" />
             Shuffle
           </Button>
           {(order || reviewed > 0) && (
-            <Button variant="ghost" size="sm" onClick={reset}>
+            <Button variant="ghost" size="xs" onClick={reset} className="gap-1">
+              <RotateCcw className="h-3.5 w-3.5" aria-hidden="true" />
               Reset
             </Button>
           )}
-          <Button variant="ghost" size="sm" onClick={() => run(true)} disabled={loading}>
-            {loading && <Spinner />}
+          <Button variant="ghost" size="xs" onClick={() => run(true)} disabled={loading} className="gap-1">
+            {loading ? <Spinner /> : <RefreshCw className="h-3.5 w-3.5" aria-hidden="true" />}
             New set
           </Button>
         </>
@@ -128,20 +149,20 @@ export default function FlashcardsPanel({ document: doc, onGenerated }) {
         aria-label="Flip card"
       >
         <Card
-          className={`min-h-56 cursor-pointer select-none transition-all duration-200 ${
-            flipped ? 'border-indigo-200 bg-indigo-50/40' : 'hover:border-slate-300 hover:shadow-md'
+          className={`min-h-56 cursor-pointer select-none transition-all duration-150 ${
+            flipped ? 'border-accent/40 bg-accent-subtle/30' : 'hover:border-primary/30'
           }`}
         >
           <div className="flex min-h-48 flex-col items-center justify-center gap-3 px-2 py-6 text-center">
             <Badge tone={flipped ? 'indigo' : 'slate'}>{flipped ? 'Answer' : 'Question'}</Badge>
             <p
               key={`${index}-${flipped}`}
-              className="animate-fade-in max-w-xl text-lg font-medium leading-relaxed text-slate-900"
+              className="animate-fade-in max-w-xl text-base font-medium leading-relaxed text-primary sm:text-lg"
             >
               {flipped ? card.answer : card.question}
             </p>
-            <p className="text-xs text-slate-400">
-              Card {index + 1} of {deck.length} · click or press space to flip
+            <p className="font-mono text-xs text-muted">
+              Card {index + 1} of {deck.length} · space to flip
             </p>
           </div>
         </Card>
@@ -152,28 +173,34 @@ export default function FlashcardsPanel({ document: doc, onGenerated }) {
         <Button
           variant="secondary"
           onClick={() => mark(true)}
-          className={known[index] === true ? 'border-emerald-300 bg-emerald-50 text-emerald-700' : ''}
+          className={`gap-1.5 ${known[index] === true ? 'border-success/40 bg-success-subtle text-success' : ''}`}
         >
-          ✓ I knew this <span className="hidden text-xs text-slate-400 sm:inline">(1)</span>
+          <Check className="h-4 w-4 stroke-[2.5]" aria-hidden="true" />
+          <span>I knew this</span>
+          <span className="hidden font-mono text-[10px] text-muted sm:inline">(1)</span>
         </Button>
         <Button
           variant="secondary"
           onClick={() => mark(false)}
-          className={known[index] === false ? 'border-amber-300 bg-amber-50 text-amber-700' : ''}
+          className={`gap-1.5 ${known[index] === false ? 'border-warning/40 bg-warning-subtle text-warning' : ''}`}
         >
-          ↻ Review again <span className="hidden text-xs text-slate-400 sm:inline">(2)</span>
+          <RotateCw className="h-3.5 w-3.5" aria-hidden="true" />
+          <span>Review again</span>
+          <span className="hidden font-mono text-[10px] text-muted sm:inline">(2)</span>
         </Button>
       </div>
 
       <div className="flex items-center justify-between gap-2">
-        <Button variant="ghost" onClick={() => move(-1)}>
-          ← Previous
+        <Button variant="ghost" size="sm" onClick={() => move(-1)} className="gap-1">
+          <ChevronLeft className="h-4 w-4" aria-hidden="true" />
+          Previous
         </Button>
-        <span className="text-xs text-slate-400">
+        <span className="font-mono text-xs text-muted">
           {reviewed === deck.length ? 'Deck complete' : `${deck.length - reviewed} left`}
         </span>
-        <Button variant="ghost" onClick={() => move(1)}>
-          Next →
+        <Button variant="ghost" size="sm" onClick={() => move(1)} className="gap-1">
+          Next
+          <ChevronRight className="h-4 w-4" aria-hidden="true" />
         </Button>
       </div>
     </PanelShell>

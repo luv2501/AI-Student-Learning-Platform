@@ -1,4 +1,6 @@
 import { useState } from 'react';
+import { toast } from 'sonner';
+import { FileText, Copy, Check, Download, RefreshCw } from 'lucide-react';
 import Card from '../ui/Card.jsx';
 import Button from '../ui/Button.jsx';
 import Spinner from '../ui/Spinner.jsx';
@@ -26,7 +28,7 @@ export default function NotesPanel({ document: doc, onGenerated }) {
   if (!notes) {
     return (
       <GeneratePrompt
-        icon="📝"
+        icon={FileText}
         title="Study notes"
         text="Turn this PDF into a short summary, the key points to remember, and section-by-section bullets."
         label="Generate notes"
@@ -45,9 +47,12 @@ export default function NotesPanel({ document: doc, onGenerated }) {
     try {
       await navigator.clipboard.writeText(markdown);
       setCopied(true);
+      toast.success('Notes copied to clipboard');
       setTimeout(() => setCopied(false), 2000);
     } catch {
-      setError('Your browser blocked copying. Try the download instead.');
+      const msg = 'Your browser blocked copying. Try downloading instead.';
+      setError(msg);
+      toast.error(msg);
     }
   }
 
@@ -59,6 +64,7 @@ export default function NotesPanel({ document: doc, onGenerated }) {
     link.download = `${docTitle.replace(/\.pdf$/i, '')} notes.md`;
     link.click();
     URL.revokeObjectURL(url);
+    toast.success('Notes downloaded');
   }
 
   return (
@@ -69,31 +75,33 @@ export default function NotesPanel({ document: doc, onGenerated }) {
       onDismissError={() => setError('')}
       actions={
         <>
-          <Button variant="secondary" size="sm" onClick={copy}>
-            {copied ? '✓ Copied' : 'Copy'}
+          <Button variant="secondary" size="xs" onClick={copy} className="gap-1">
+            {copied ? <Check className="h-3.5 w-3.5" aria-hidden="true" /> : <Copy className="h-3.5 w-3.5" aria-hidden="true" />}
+            {copied ? 'Copied' : 'Copy'}
           </Button>
-          <Button variant="secondary" size="sm" onClick={download}>
+          <Button variant="secondary" size="xs" onClick={download} className="gap-1">
+            <Download className="h-3.5 w-3.5" aria-hidden="true" />
             Download
           </Button>
-          <Button variant="ghost" size="sm" onClick={() => run(true)} disabled={loading}>
-            {loading && <Spinner />}
+          <Button variant="ghost" size="xs" onClick={() => run(true)} disabled={loading} className="gap-1">
+            {loading ? <Spinner /> : <RefreshCw className="h-3.5 w-3.5" aria-hidden="true" />}
             Regenerate
           </Button>
         </>
       }
     >
-      <Card className="border-l-4 border-l-indigo-500">
-        <p className="text-xs font-semibold uppercase tracking-wide text-indigo-600">Summary</p>
-        <p className="mt-2 text-sm leading-relaxed text-slate-700">{notes.summary}</p>
+      <Card className="border-l-2 border-l-accent bg-surface">
+        <p className="text-[11px] font-mono font-medium uppercase tracking-wider text-accent">Summary</p>
+        <p className="mt-2 text-sm leading-relaxed text-secondary">{notes.summary}</p>
       </Card>
 
       {notes.keyPoints?.length > 0 && (
         <Card>
-          <h3 className="font-semibold tracking-tight text-slate-900">Key points to remember</h3>
+          <h3 className="font-medium tracking-tight text-primary text-sm">Key points to remember</h3>
           <ul className="mt-3 space-y-2.5">
             {notes.keyPoints.map((point, i) => (
-              <li key={i} className="flex gap-3 text-sm text-slate-700">
-                <span className="mt-0.5 grid h-5 w-5 shrink-0 place-items-center rounded-full bg-indigo-50 text-[11px] font-semibold text-indigo-700">
+              <li key={i} className="flex gap-3 text-xs leading-relaxed text-secondary">
+                <span className="mt-0.5 grid h-5 w-5 shrink-0 place-items-center rounded-sm border border-border-subtle bg-subtle font-mono text-[11px] font-semibold text-primary">
                   {i + 1}
                 </span>
                 <span className="leading-relaxed">{point}</span>
@@ -107,12 +115,12 @@ export default function NotesPanel({ document: doc, onGenerated }) {
         <div className="grid gap-4 md:grid-cols-2">
           {notes.sections.map((section, i) => (
             <Card key={i} hover>
-              <h3 className="font-semibold tracking-tight text-slate-900">{section.heading}</h3>
-              <ul className="mt-2.5 space-y-1.5">
+              <h3 className="font-medium tracking-tight text-primary text-sm">{section.heading}</h3>
+              <ul className="mt-2.5 space-y-2">
                 {section.points.map((point, j) => (
-                  <li key={j} className="flex gap-2 text-sm leading-relaxed text-slate-700">
-                    <span className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-slate-300" />
-                    {point}
+                  <li key={j} className="flex gap-2 text-xs leading-relaxed text-secondary">
+                    <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-xs bg-muted" />
+                    <span>{point}</span>
                   </li>
                 ))}
               </ul>

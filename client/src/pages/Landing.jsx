@@ -1,78 +1,97 @@
 import { Link } from 'react-router-dom';
+import {
+  FileText,
+  Layers,
+  HelpCircle,
+  MessageSquare,
+  CheckSquare,
+  BarChart3,
+  ArrowRight,
+  UploadCloud,
+  Sparkles,
+} from 'lucide-react';
 import Card from '../components/ui/Card.jsx';
 import Button from '../components/ui/Button.jsx';
 import Badge from '../components/ui/Badge.jsx';
 
 const features = [
   {
-    icon: '📝',
+    icon: FileText,
     title: 'AI study notes',
-    text: 'A clean summary, the key points and section bullets from any lecture PDF.',
+    text: 'A clean summary, key takeaways, and section-by-section bullets synthesized from your uploaded PDF.',
   },
   {
-    icon: '🃏',
+    icon: Layers,
     title: 'Flashcards',
-    text: 'Auto generated question and answer cards, with shuffle and self marking.',
+    text: 'Auto-generated question and answer cards with keyboard navigation, shuffle, and self-marking recall.',
   },
   {
-    icon: '🎯',
+    icon: HelpCircle,
     title: 'Practice quizzes',
-    text: 'Multiple choice questions with instant scoring and explanations.',
+    text: 'Multiple-choice questions with instant scoring, progress metrics, and conceptual rationale explanations.',
   },
   {
-    icon: '💬',
+    icon: MessageSquare,
     title: 'Ask your PDF',
-    text: 'Ask anything about a document and get answers grounded in its content.',
+    text: 'Ask anything about a document and get precise, verified answers grounded strictly in its contents.',
   },
   {
-    icon: '✅',
+    icon: CheckSquare,
     title: 'Task tracking',
-    text: 'Plan revision by subject and priority, with due dates and progress.',
+    text: 'Plan study sessions by subject, priority, and due dates with clear completion metrics.',
   },
   {
-    icon: '📊',
-    title: 'Progress at a glance',
-    text: 'See what is due today, what is overdue and how much you have finished.',
+    icon: BarChart3,
+    title: 'Progress metrics',
+    text: 'Monitor due today, overdue items, and completion percentages across all your subjects at a glance.',
   },
 ];
 
 const steps = [
-  { step: '1', title: 'Upload a PDF', text: 'Lecture slides, a chapter, or your own notes.' },
-  { step: '2', title: 'Generate material', text: 'Notes, flashcards and a quiz in one workspace.' },
-  { step: '3', title: 'Study and track', text: 'Test yourself and tick off tasks until exam day.' },
+  {
+    step: '01',
+    icon: UploadCloud,
+    title: 'Upload document',
+    text: 'Drop lecture slides, textbook chapters, or reference PDFs directly into your library.',
+  },
+  {
+    step: '02',
+    icon: Sparkles,
+    title: 'Generate materials',
+    text: 'Produce verified notes, flashcards, and quizzes in a unified, distraction-free workspace.',
+  },
+  {
+    step: '03',
+    icon: CheckSquare,
+    title: 'Study and track',
+    text: 'Test retention, flip flashcards, and cross tasks off your dashboard until exam day.',
+  },
 ];
 
 export default function Landing() {
   return (
     <div className="space-y-16 sm:space-y-20">
-      {/* Hero */}
-      <section className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-indigo-600 via-indigo-700 to-violet-800 px-6 py-16 text-center text-white shadow-xl shadow-indigo-900/10 sm:px-12 sm:py-20">
-        <div
-          className="pointer-events-none absolute inset-0 opacity-20"
-          style={{
-            backgroundImage:
-              'radial-gradient(circle at 20% 20%, white 0, transparent 45%), radial-gradient(circle at 80% 70%, white 0, transparent 40%)',
-          }}
-        />
-        <div className="relative">
-          <span className="inline-flex items-center rounded-full bg-white/15 px-3 py-1 text-xs font-medium uppercase tracking-wider text-indigo-100 ring-1 ring-white/20">
+      {/* Editorial Restrained Hero */}
+      <section className="relative rounded-2xl border border-border-subtle bg-surface px-6 py-14 text-center shadow-xs sm:px-12 sm:py-20">
+        <div className="mx-auto max-w-3xl">
+          <Badge tone="indigo" className="mb-4">
             FileSense — Understand every document
-          </span>
-          <h1 className="mx-auto mt-5 max-w-3xl text-4xl font-bold leading-tight tracking-tight sm:text-5xl">
+          </Badge>
+          <h1 className="mt-2 text-3xl font-semibold tracking-tight text-primary sm:text-5xl leading-tight">
             Understand every document with FileSense
           </h1>
-          <p className="mx-auto mt-4 max-w-xl text-base text-indigo-100 sm:text-lg">
-            FileSense reads your documents and builds the notes, flashcards and quizzes you would
-            have made yourself — then keeps your revision on track.
+          <p className="mx-auto mt-4 max-w-xl text-sm leading-relaxed text-secondary sm:text-base">
+            FileSense analyzes your study documents to build high-utility notes, active recall flashcards, and practice quizzes — keeping your entire revision plan grounded and on schedule.
           </p>
-          <div className="mt-9 flex flex-wrap justify-center gap-3">
+          <div className="mt-8 flex flex-wrap justify-center gap-3">
             <Link to="/register">
-              <Button size="lg" className="bg-white text-indigo-700 shadow-lg hover:bg-indigo-50">
+              <Button size="lg" className="gap-2">
                 Get started with FileSense
+                <ArrowRight className="h-4 w-4" aria-hidden="true" />
               </Button>
             </Link>
             <Link to="/login">
-              <Button size="lg" variant="ghost" className="text-white ring-1 ring-white/30 hover:bg-white/10">
+              <Button size="lg" variant="secondary">
                 I already have an account
               </Button>
             </Link>
@@ -80,59 +99,73 @@ export default function Landing() {
         </div>
       </section>
 
-      {/* Features */}
+      {/* Features Grid */}
       <section>
         <div className="text-center">
-          <Badge tone="indigo">Everything in one place</Badge>
-          <h2 className="mt-3 text-2xl font-semibold tracking-tight text-slate-900 sm:text-3xl">
+          <Badge tone="slate">Editorial System</Badge>
+          <h2 className="mt-2 text-2xl font-semibold tracking-tight text-primary sm:text-3xl">
             Built around how students actually revise
           </h2>
+          <p className="mt-1 text-xs text-secondary max-w-md mx-auto">
+            Zero noise, no distracting fluff. Only high-contrast, structured study tools.
+          </p>
         </div>
 
         <div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {features.map((f, i) => (
-            <Card
-              key={f.title}
-              hover
-              className="animate-rise"
-              style={{ animationDelay: `${i * 60}ms` }}
-            >
-              <span className="grid h-10 w-10 place-items-center rounded-xl bg-indigo-50 text-xl">
-                {f.icon}
-              </span>
-              <h3 className="mt-3 font-semibold tracking-tight text-slate-900">{f.title}</h3>
-              <p className="mt-1 text-sm leading-relaxed text-slate-600">{f.text}</p>
-            </Card>
-          ))}
+          {features.map((f, i) => {
+            const IconComponent = f.icon;
+            return (
+              <Card
+                key={f.title}
+                hover
+                className="animate-rise flex flex-col justify-between"
+                style={{ animationDelay: `${i * 50}ms` }}
+              >
+                <div>
+                  <span className="grid h-9 w-9 place-items-center rounded-md border border-border-subtle bg-subtle text-accent">
+                    <IconComponent className="h-4.5 w-4.5" aria-hidden="true" />
+                  </span>
+                  <h3 className="mt-3.5 text-sm font-semibold tracking-tight text-primary">{f.title}</h3>
+                  <p className="mt-1 text-xs leading-relaxed text-secondary">{f.text}</p>
+                </div>
+              </Card>
+            );
+          })}
         </div>
       </section>
 
       {/* How it works */}
       <section>
-        <h2 className="text-center text-2xl font-semibold tracking-tight text-slate-900 sm:text-3xl">
-          Three steps to a full revision set
+        <h2 className="text-center text-2xl font-semibold tracking-tight text-primary sm:text-3xl">
+          Three steps to a complete study workflow
         </h2>
 
         <div className="mt-8 grid gap-4 sm:grid-cols-3">
-          {steps.map((s) => (
-            <Card key={s.step} className="text-center">
-              <span className="mx-auto grid h-10 w-10 place-items-center rounded-full bg-indigo-600 text-sm font-bold text-white">
-                {s.step}
-              </span>
-              <h3 className="mt-3 font-semibold tracking-tight text-slate-900">{s.title}</h3>
-              <p className="mt-1 text-sm text-slate-600">{s.text}</p>
-            </Card>
-          ))}
+          {steps.map((s) => {
+            const StepIcon = s.icon;
+            return (
+              <Card key={s.step} className="text-center">
+                <div className="mx-auto flex h-10 w-10 items-center justify-center rounded-md border border-border-subtle bg-subtle text-accent">
+                  <StepIcon className="h-5 w-5" aria-hidden="true" />
+                </div>
+                <span className="mt-3 inline-block font-mono text-xs font-semibold text-muted">
+                  STEP {s.step}
+                </span>
+                <h3 className="mt-1 text-sm font-semibold tracking-tight text-primary">{s.title}</h3>
+                <p className="mt-1 text-xs text-secondary leading-relaxed">{s.text}</p>
+              </Card>
+            );
+          })}
         </div>
       </section>
 
       {/* Closing CTA */}
-      <section className="rounded-3xl border border-slate-200 bg-white px-6 py-12 text-center shadow-sm">
-        <h2 className="text-2xl font-semibold tracking-tight text-slate-900">
+      <section className="rounded-xl border border-border-subtle bg-surface px-6 py-12 text-center shadow-xs">
+        <h2 className="text-xl font-semibold tracking-tight text-primary sm:text-2xl">
           Ready to understand every document?
         </h2>
-        <p className="mx-auto mt-2 max-w-md text-sm text-slate-600">
-          Free to start. Upload a PDF and see your first set of notes in under a minute with FileSense.
+        <p className="mx-auto mt-2 max-w-md text-xs sm:text-sm text-secondary">
+          Free to start. Upload a PDF and generate your first set of notes in under a minute with FileSense.
         </p>
         <Link to="/register" className="mt-6 inline-block">
           <Button size="lg">Get started with FileSense</Button>

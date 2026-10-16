@@ -1,4 +1,6 @@
 import { useState } from 'react';
+import { toast } from 'sonner';
+import { HelpCircle, RefreshCw, RotateCcw, CheckCircle2, AlertCircle } from 'lucide-react';
 import Card from '../ui/Card.jsx';
 import Button from '../ui/Button.jsx';
 import Badge from '../ui/Badge.jsx';
@@ -16,7 +18,7 @@ export default function QuizPanel({ document: doc, onGenerated }) {
   if (!questions) {
     return (
       <GeneratePrompt
-        icon="🎯"
+        icon={HelpCircle}
         title="Practice quiz"
         text="Generate multiple choice questions from this PDF and check how much you have actually retained."
         label="Generate quiz"
@@ -33,10 +35,16 @@ export default function QuizPanel({ document: doc, onGenerated }) {
   const answeredAll = answered === questions.length;
   const percent = Math.round((score / questions.length) * 100);
 
+  function handleSubmit() {
+    setSubmitted(true);
+    toast.success(`Quiz completed: ${score}/${questions.length} (${percent}%)`);
+  }
+
   function reset(regenerate = false) {
     setAnswers({});
     setSubmitted(false);
     if (regenerate) run(true);
+    else toast.info('Quiz reset — answers cleared');
   }
 
   return (
@@ -48,12 +56,13 @@ export default function QuizPanel({ document: doc, onGenerated }) {
       actions={
         <>
           {submitted && (
-            <Button variant="secondary" size="sm" onClick={() => reset(false)}>
+            <Button variant="secondary" size="xs" onClick={() => reset(false)} className="gap-1">
+              <RotateCcw className="h-3.5 w-3.5" aria-hidden="true" />
               Try again
             </Button>
           )}
-          <Button variant="ghost" size="sm" onClick={() => reset(true)} disabled={loading}>
-            {loading && <Spinner />}
+          <Button variant="ghost" size="xs" onClick={() => reset(true)} disabled={loading} className="gap-1">
+            {loading ? <Spinner /> : <RefreshCw className="h-3.5 w-3.5" aria-hidden="true" />}
             New quiz
           </Button>
         </>
@@ -61,28 +70,28 @@ export default function QuizPanel({ document: doc, onGenerated }) {
     >
       {submitted ? (
         <Card className="text-center">
-          <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Your score</p>
+          <p className="text-[11px] font-mono font-medium uppercase tracking-wider text-muted">Your score</p>
           <p
-            className={`mt-1 text-4xl font-semibold tracking-tight ${
-              percent >= 80 ? 'text-emerald-600' : percent >= 50 ? 'text-amber-600' : 'text-rose-600'
+            className={`mt-1 font-mono text-3xl font-semibold tracking-tight sm:text-4xl ${
+              percent >= 80 ? 'text-success' : percent >= 50 ? 'text-warning' : 'text-danger'
             }`}
           >
             {score}
-            <span className="text-2xl text-slate-300">/{questions.length}</span>
+            <span className="text-xl text-muted font-normal">/{questions.length}</span>
           </p>
-          <p className="mt-1 text-sm text-slate-600">
+          <p className="mt-1 text-xs text-secondary">
             {percent === 100
-              ? 'Perfect score — this topic is solid.'
+              ? 'Perfect score — this material is completely mastered.'
               : percent >= 80
-                ? 'Strong result. Review the misses and move on.'
+                ? 'Strong result. Review missed items and move ahead.'
                 : percent >= 50
-                  ? 'Halfway there. The explanations below will help.'
-                  : 'Worth another pass over the notes before retrying.'}
+                  ? 'Decent recall. Check the rationales below.'
+                  : 'Review the study notes before retrying.'}
           </p>
           <ProgressBar
             value={percent}
             tone={percent >= 80 ? 'emerald' : percent >= 50 ? 'amber' : 'indigo'}
-            className="mx-auto mt-4 max-w-sm"
+            className="mx-auto mt-3.5 max-w-sm"
           />
         </Card>
       ) : (
@@ -94,14 +103,25 @@ export default function QuizPanel({ document: doc, onGenerated }) {
         const wrong = submitted && answers[i] !== q.correctIndex;
 
         return (
-          <Card key={i} className={submitted ? (correct ? 'border-emerald-200' : 'border-rose-200') : ''}>
+          <Card
+            key={i}
+            className={
+              submitted
+                ? correct
+                  ? 'border-success/40 bg-success-subtle/20'
+                  : 'border-danger/40 bg-danger-subtle/20'
+                : ''
+            }
+          >
             <div className="flex items-start justify-between gap-3">
-              <p className="text-sm font-medium leading-relaxed text-slate-900">
-                <span className="mr-1.5 text-slate-400">{i + 1}.</span>
+              <p className="text-xs font-medium leading-relaxed text-primary sm:text-sm">
+                <span className="mr-1.5 font-mono text-muted">{i + 1}.</span>
                 {q.question}
               </p>
               {submitted && (
-                <Badge tone={correct ? 'emerald' : 'rose'}>{correct ? 'Correct' : 'Missed'}</Badge>
+                <Badge tone={correct ? 'emerald' : 'rose'}>
+                  {correct ? 'Correct' : 'Missed'}
+                </Badge>
               )}
             </div>
 
@@ -110,11 +130,17 @@ export default function QuizPanel({ document: doc, onGenerated }) {
                 const chosen = answers[i] === oi;
                 const isAnswer = q.correctIndex === oi;
 
-                let style = 'border-slate-200 hover:border-indigo-300 hover:bg-indigo-50/40';
-                if (submitted && isAnswer) style = 'border-emerald-400 bg-emerald-50';
-                else if (submitted && chosen) style = 'border-rose-300 bg-rose-50';
-                else if (submitted) style = 'border-slate-200 opacity-60';
-                else if (chosen) style = 'border-indigo-500 bg-indigo-50 ring-1 ring-indigo-200';
+                let style =
+                  'border-border-subtle bg-surface hover:border-primary/40 hover:bg-subtle/50 text-secondary';
+                if (submitted && isAnswer) {
+                  style = 'border-success/50 bg-success-subtle text-success font-medium';
+                } else if (submitted && chosen) {
+                  style = 'border-danger/50 bg-danger-subtle text-danger line-through';
+                } else if (submitted) {
+                  style = 'border-border-subtle/50 opacity-50 text-muted';
+                } else if (chosen) {
+                  style = 'border-accent bg-accent-subtle text-accent ring-1 ring-accent';
+                }
 
                 return (
                   <button
@@ -122,18 +148,18 @@ export default function QuizPanel({ document: doc, onGenerated }) {
                     type="button"
                     disabled={submitted}
                     onClick={() => setAnswers({ ...answers, [i]: oi })}
-                    className={`flex w-full items-center gap-3 rounded-xl border px-3.5 py-2.5 text-left text-sm transition-all duration-150 disabled:cursor-default ${style}`}
+                    className={`flex w-full cursor-pointer items-center gap-3 rounded-md border px-3.5 py-2 text-left text-xs transition-colors disabled:cursor-default ${style}`}
                   >
                     <span
-                      className={`grid h-6 w-6 shrink-0 place-items-center rounded-full border text-xs font-semibold transition ${
+                      className={`grid h-5 w-5 shrink-0 place-items-center rounded-sm font-mono text-[11px] font-semibold border ${
                         chosen || (submitted && isAnswer)
-                          ? 'border-transparent bg-white/70 text-slate-900'
-                          : 'border-slate-300 text-slate-500'
+                          ? 'border-transparent bg-primary/10 text-primary'
+                          : 'border-border-subtle text-muted'
                       }`}
                     >
                       {String.fromCharCode(65 + oi)}
                     </span>
-                    <span className="leading-relaxed text-slate-700">{option}</span>
+                    <span className="leading-relaxed">{option}</span>
                   </button>
                 );
               })}
@@ -141,11 +167,13 @@ export default function QuizPanel({ document: doc, onGenerated }) {
 
             {submitted && q.explanation && (
               <p
-                className={`mt-3 rounded-xl px-3.5 py-2.5 text-xs leading-relaxed ${
-                  wrong ? 'bg-amber-50 text-amber-800' : 'bg-slate-50 text-slate-600'
+                className={`mt-3 rounded-md px-3 py-2 text-xs leading-relaxed border ${
+                  wrong
+                    ? 'border-warning/30 bg-warning-subtle text-warning'
+                    : 'border-border-subtle bg-subtle text-secondary'
                 }`}
               >
-                <b>Why:</b> {q.explanation}
+                <b className="font-semibold">Explanation:</b> {q.explanation}
               </p>
             )}
           </Card>
@@ -153,8 +181,8 @@ export default function QuizPanel({ document: doc, onGenerated }) {
       })}
 
       {!submitted && (
-        <div className="sticky bottom-4">
-          <Button fullWidth size="lg" onClick={() => setSubmitted(true)} disabled={!answeredAll}>
+        <div className="sticky bottom-4 pt-2">
+          <Button fullWidth size="md" onClick={handleSubmit} disabled={!answeredAll}>
             {answeredAll
               ? 'Check my answers'
               : `Answer ${questions.length - answered} more question${

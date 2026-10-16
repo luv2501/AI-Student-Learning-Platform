@@ -1,4 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
+import { toast } from 'sonner';
+import { MessageSquare, Send, Sparkles } from 'lucide-react';
 import api, { apiErrorMessage } from '../../lib/api.js';
 import Card from '../ui/Card.jsx';
 import Input from '../ui/Input.jsx';
@@ -27,7 +29,11 @@ export default function AskPanel({ document: doc }) {
 
   async function ask(text) {
     const asked = (text ?? question).trim();
-    if (asked.length < 3) return setError('Please type a longer question');
+    if (asked.length < 3) {
+      setError('Please type a longer question');
+      toast.error('Question too short');
+      return;
+    }
 
     setLoading(true);
     setError('');
@@ -35,8 +41,11 @@ export default function AskPanel({ document: doc }) {
     try {
       const { data } = await api.post(`/documents/${doc._id}/ask`, { question: asked });
       setThread((t) => [...t, { question: data.question, answer: data.answer }]);
+      toast.success('Response ready');
     } catch (err) {
-      setError(apiErrorMessage(err));
+      const msg = apiErrorMessage(err);
+      setError(msg);
+      toast.error(msg);
       setQuestion(asked);
     } finally {
       setLoading(false);
@@ -46,10 +55,9 @@ export default function AskPanel({ document: doc }) {
   return (
     <div className="space-y-4">
       <div>
-        <h2 className="font-semibold tracking-tight text-slate-900">Ask this PDF</h2>
-        <p className="mt-0.5 text-sm text-slate-500">
-          Answers come only from <b className="text-slate-700">{doc.title || doc.originalName}</b>, so they stay on
-          topic.
+        <h2 className="font-medium tracking-tight text-primary text-base">Ask this PDF</h2>
+        <p className="mt-0.5 text-xs text-secondary">
+          Answers come strictly from <b className="text-primary font-semibold">{doc.title || doc.originalName}</b>.
         </p>
       </div>
 
@@ -62,7 +70,7 @@ export default function AskPanel({ document: doc }) {
         <div className="sm-scroll max-h-[26rem] space-y-4 overflow-y-auto p-4 sm:p-5">
           {thread.length === 0 && !loading ? (
             <EmptyState
-              icon="💬"
+              icon={<MessageSquare className="h-6 w-6 text-muted" aria-hidden="true" />}
               title="Ask anything about this document"
               text="Try one of the suggestions below, or type your own question."
               className="py-8"
@@ -71,81 +79,79 @@ export default function AskPanel({ document: doc }) {
             thread.map((entry, i) => (
               <div key={i} className="animate-rise space-y-2.5">
                 <div className="flex justify-end">
-                  <p className="max-w-[85%] rounded-2xl rounded-br-sm bg-indigo-600 px-3.5 py-2.5 text-sm text-white shadow-sm">
+                  <p className="max-w-[85%] rounded-md bg-accent px-3.5 py-2 text-xs leading-relaxed text-accent-contrast shadow-xs">
                     {entry.question}
                   </p>
                 </div>
-                <div className="flex gap-2.5">
-                  <span className="mt-0.5 grid h-7 w-7 shrink-0 place-items-center rounded-lg bg-gradient-to-br from-indigo-500 to-violet-600 text-[10px] font-bold text-white">
+                <div className="flex items-start gap-2.5">
+                  <span className="mt-0.5 grid h-6 w-6 shrink-0 place-items-center rounded-sm border border-border-subtle bg-subtle font-mono text-[10px] font-bold text-accent">
                     AI
                   </span>
-                  <p className="max-w-[85%] whitespace-pre-line rounded-2xl rounded-bl-sm border border-slate-200 bg-slate-50 px-3.5 py-2.5 text-sm leading-relaxed text-slate-700">
+                  <div className="max-w-[85%] whitespace-pre-line rounded-md border border-border-subtle bg-surface px-3.5 py-2.5 text-xs leading-relaxed text-secondary shadow-xs">
                     {entry.answer}
-                  </p>
+                  </div>
                 </div>
               </div>
             ))
           )}
 
           {loading && (
-            <div className="flex items-center gap-2.5 text-sm text-slate-500">
-              <span className="grid h-7 w-7 shrink-0 place-items-center rounded-lg bg-gradient-to-br from-indigo-500 to-violet-600 text-[10px] font-bold text-white">
+            <div className="flex items-center gap-2.5 text-xs text-muted">
+              <span className="grid h-6 w-6 shrink-0 place-items-center rounded-sm border border-border-subtle bg-subtle font-mono text-[10px] font-bold text-accent">
                 AI
               </span>
-              <span className="flex gap-1 rounded-2xl rounded-bl-sm border border-slate-200 bg-slate-50 px-4 py-3">
+              <span className="flex gap-1 rounded-md border border-border-subtle bg-subtle px-3 py-2">
                 {[0, 1, 2].map((i) => (
                   <span
                     key={i}
-                    className="h-1.5 w-1.5 animate-bounce rounded-full bg-slate-400"
+                    className="h-1.5 w-1.5 animate-bounce rounded-full bg-accent"
                     style={{ animationDelay: `${i * 140}ms` }}
                   />
                 ))}
               </span>
             </div>
           )}
-
           <div ref={endRef} />
         </div>
 
-        {/* Composer */}
+        {/* Input */}
         <form
           onSubmit={(e) => {
             e.preventDefault();
             ask();
           }}
-          className="border-t border-slate-100 bg-white p-3 sm:p-4"
+          className="border-t border-border-subtle bg-surface p-3"
         >
-          <div className="flex flex-col gap-2 sm:flex-row">
+          <div className="flex gap-2">
             <Input
-              id="question"
-              className="flex-1"
-              placeholder="What does the Calvin cycle produce?"
+              id="ask-input"
               value={question}
               onChange={(e) => setQuestion(e.target.value)}
-              maxLength={500}
+              placeholder="Ask a question about this document..."
               disabled={loading}
+              className="flex-1"
             />
-            <Button type="submit" disabled={loading || question.trim().length < 3}>
-              {loading && <Spinner />}
-              {loading ? 'Thinking' : 'Ask'}
+            <Button type="submit" disabled={loading || !question.trim()} className="gap-1.5">
+              {loading ? <Spinner /> : <Send className="h-3.5 w-3.5" aria-hidden="true" />}
+              Ask
             </Button>
           </div>
 
-          {thread.length === 0 && (
-            <div className="mt-2.5 flex flex-wrap gap-1.5">
-              {examples.map((example) => (
-                <button
-                  key={example}
-                  type="button"
-                  onClick={() => ask(example)}
-                  disabled={loading}
-                  className="rounded-full border border-slate-200 px-2.5 py-1 text-xs text-slate-600 transition hover:border-indigo-300 hover:bg-indigo-50 hover:text-indigo-700 disabled:opacity-50"
-                >
-                  {example}
-                </button>
-              ))}
-            </div>
-          )}
+          {/* Quick suggestions */}
+          <div className="mt-2.5 flex flex-wrap items-center gap-1.5">
+            <span className="font-mono text-[10px] uppercase tracking-wider text-muted">Try:</span>
+            {examples.map((ex) => (
+              <button
+                key={ex}
+                type="button"
+                onClick={() => ask(ex)}
+                disabled={loading}
+                className="cursor-pointer rounded-sm border border-border-subtle bg-subtle px-2 py-0.5 text-[11px] text-secondary transition hover:border-primary/40 hover:text-primary disabled:opacity-50"
+              >
+                {ex}
+              </button>
+            ))}
+          </div>
         </form>
       </Card>
     </div>

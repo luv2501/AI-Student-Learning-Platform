@@ -1,4 +1,6 @@
-import { useState } from 'react';
+import { isValidElement, useState } from 'react';
+import { toast } from 'sonner';
+import { Sparkles } from 'lucide-react';
 import api, { apiErrorMessage } from '../../lib/api.js';
 import Card from '../ui/Card.jsx';
 import Button from '../ui/Button.jsx';
@@ -17,14 +19,18 @@ export function useAiPanel(documentId, field, onGenerated) {
   async function run(refresh = false) {
     setLoading(true);
     setError('');
+    const fieldName = field.charAt(0).toUpperCase() + field.slice(1);
     try {
       const res = await api.post(
         `/documents/${documentId}/${field}${refresh ? '?refresh=true' : ''}`
       );
       setData(res.data[field]);
       onGenerated?.(field, res.data[field]);
+      toast.success(`${fieldName} generated successfully`);
     } catch (err) {
-      setError(apiErrorMessage(err));
+      const msg = apiErrorMessage(err);
+      setError(msg);
+      toast.error(msg);
     } finally {
       setLoading(false);
     }
@@ -39,8 +45,8 @@ export function PanelShell({ title, subtitle, actions, error, onDismissError, ch
     <div className="space-y-4">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div className="min-w-0">
-          <h2 className="font-semibold tracking-tight text-slate-900">{title}</h2>
-          {subtitle && <p className="mt-0.5 text-sm text-slate-500">{subtitle}</p>}
+          <h2 className="font-medium tracking-tight text-primary text-base">{title}</h2>
+          {subtitle && <p className="mt-0.5 text-xs text-secondary">{subtitle}</p>}
         </div>
         {actions && <div className="flex flex-wrap gap-2">{actions}</div>}
       </div>
@@ -64,20 +70,29 @@ export default function GeneratePrompt({ icon, title, text, label, loading, onGe
     );
   }
 
+  const renderIcon = () => {
+    if (isValidElement(icon)) return icon;
+    if (typeof icon === 'function') {
+      const IconComponent = icon;
+      return <IconComponent className="h-6 w-6 text-accent" aria-hidden="true" />;
+    }
+    return <Sparkles className="h-6 w-6 text-accent" aria-hidden="true" />;
+  };
+
   return (
     <Card className="text-center">
-      <div className="mx-auto grid h-12 w-12 place-items-center rounded-2xl bg-indigo-50 text-2xl">
-        {icon}
+      <div className="mx-auto grid h-12 w-12 place-items-center rounded-md border border-border-subtle bg-subtle text-accent">
+        {renderIcon()}
       </div>
-      <h2 className="mt-4 font-semibold tracking-tight text-slate-900">{title}</h2>
-      <p className="mx-auto mt-1 max-w-md text-sm text-slate-600">{text}</p>
+      <h2 className="mt-3.5 font-medium tracking-tight text-primary text-base">{title}</h2>
+      <p className="mx-auto mt-1 max-w-md text-xs leading-relaxed text-secondary">{text}</p>
 
       <Alert type="error" className="mt-4 text-left" onDismiss={onDismissError}>
         {error}
       </Alert>
 
-      <Button className="mt-5" onClick={() => onGenerate()} disabled={loading}>
-        {loading && <Spinner />}
+      <Button className="mt-5 gap-1.5" onClick={() => onGenerate()} disabled={loading}>
+        {loading ? <Spinner /> : <Sparkles className="h-4 w-4" aria-hidden="true" />}
         {label}
       </Button>
     </Card>

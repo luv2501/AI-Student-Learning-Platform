@@ -1,5 +1,7 @@
 import { useEffect, useState } from 'react';
-import { Link, useParams, useSearchParams } from 'react-router-dom';
+import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom';
+import { toast } from 'sonner';
+import { ArrowLeft, Trash2, Search, FileText, UploadCloud } from 'lucide-react';
 import api, { apiErrorMessage } from '../lib/api.js';
 import Card from '../components/ui/Card.jsx';
 import Button from '../components/ui/Button.jsx';
@@ -7,7 +9,7 @@ import Alert from '../components/ui/Alert.jsx';
 import Badge from '../components/ui/Badge.jsx';
 import SegmentedTabs from '../components/ui/SegmentedTabs.jsx';
 import EmptyState from '../components/ui/EmptyState.jsx';
-import { PageLoader } from '../components/ui/Spinner.jsx';
+import { SkeletonWorkspace } from '../components/ui/Skeleton.jsx';
 import NotesPanel from '../components/pdf/NotesPanel.jsx';
 import FlashcardsPanel from '../components/pdf/FlashcardsPanel.jsx';
 import QuizPanel from '../components/pdf/QuizPanel.jsx';
@@ -24,6 +26,7 @@ const tabKeys = tabs.map((t) => t.key);
 
 export default function StudyWorkspace() {
   const { id } = useParams();
+  const navigate = useNavigate();
   const [params, setParams] = useSearchParams();
 
   const [doc, setDoc] = useState(null);
@@ -49,7 +52,13 @@ export default function StudyWorkspace() {
         setLibrary(listRes.data.documents);
         setError('');
       })
-      .catch((err) => active && setError(apiErrorMessage(err)))
+      .catch((err) => {
+        if (active) {
+          const msg = apiErrorMessage(err);
+          setError(msg);
+          toast.error(msg);
+        }
+      })
       .finally(() => active && setLoading(false));
 
     return () => {
@@ -74,18 +83,37 @@ export default function StudyWorkspace() {
     );
   }
 
-  if (loading) return <PageLoader label="Opening your study workspace..." />;
+  async function handleDeleteDocument() {
+    if (!doc) return;
+    const name = doc.title || doc.originalName;
+    if (!window.confirm(`Delete "${name}" and all generated materials?`)) return;
+
+    try {
+      await api.delete(`/documents/${doc._id}`);
+      toast.success(`"${name}" deleted`);
+      navigate('/documents');
+    } catch (err) {
+      const msg = apiErrorMessage(err);
+      setError(msg);
+      toast.error(msg);
+    }
+  }
+
+  if (loading) return <SkeletonWorkspace />;
 
   if (!doc) {
     return (
       <Card>
         <EmptyState
-          icon="🔍"
+          icon={<Search className="h-6 w-6 text-muted" aria-hidden="true" />}
           title="Document unavailable"
           text={error || 'This document could not be found.'}
           action={
             <Link to="/documents">
-              <Button variant="secondary">Back to library</Button>
+              <Button variant="secondary" size="sm" className="gap-1.5">
+                <ArrowLeft className="h-3.5 w-3.5" aria-hidden="true" />
+                Back to library
+              </Button>
             </Link>
           }
         />
@@ -108,19 +136,31 @@ export default function StudyWorkspace() {
     <div className="space-y-5">
       {/* Workspace header */}
       <div>
-        <Link
-          to="/documents"
-          className="inline-flex items-center gap-1 text-sm text-slate-500 transition hover:text-indigo-700"
-        >
-          ← Library
-        </Link>
+        <div className="flex items-center justify-between">
+          <Link
+            to="/documents"
+            className="inline-flex items-center gap-1.5 text-xs font-medium text-muted transition hover:text-primary"
+          >
+            <ArrowLeft className="h-3.5 w-3.5" aria-hidden="true" />
+            Library
+          </Link>
+          <Button
+            variant="ghost"
+            size="xs"
+            onClick={handleDeleteDocument}
+            className="text-danger hover:bg-danger-subtle hover:text-danger gap-1"
+          >
+            <Trash2 className="h-3.5 w-3.5" aria-hidden="true" />
+            Delete PDF
+          </Button>
+        </div>
 
         <div className="mt-2 flex flex-wrap items-start justify-between gap-3">
           <div className="min-w-0">
-            <h1 className="truncate text-2xl font-semibold tracking-tight text-slate-900 sm:text-3xl">
+            <h1 className="truncate text-2xl font-semibold tracking-tight text-primary sm:text-3xl">
               {docTitle.replace(/\.pdf$/i, '')}
             </h1>
-            <p className="mt-1 text-sm text-slate-500">
+            <p className="mt-1 font-mono text-xs text-muted">
               {doc.pageCount} page{doc.pageCount === 1 ? '' : 's'} ·{' '}
               {doc.textLength.toLocaleString()} characters · added{' '}
               {new Date(doc.createdAt).toLocaleDateString(undefined, {
@@ -161,15 +201,16 @@ export default function StudyWorkspace() {
       </Alert>
 
       <div className="grid gap-5 lg:grid-cols-[15rem_1fr] lg:items-start">
-        {/* Document switcher — makes the four tools feel like one workspace */}
+        {/* Document switcher */}
         <aside className="hidden lg:block lg:sticky lg:top-20">
           <Card padding="none">
-            <p className="border-b border-slate-100 px-4 py-3 text-xs font-semibold uppercase tracking-wide text-slate-500">
+            <p className="border-b border-border-subtle px-4 py-3 text-[11px] font-mono font-medium uppercase tracking-wider text-muted">
               Your documents
             </p>
             <ul className="sm-scroll max-h-[26rem] overflow-y-auto">
               <li>
-                <span className="flex items-start gap-2 border-l-2 border-indigo-600 bg-indigo-50/60 px-3.5 py-2.5 text-sm font-medium text-indigo-800">
+                <span className="flex items-center gap-2 border-l-2 border-accent bg-accent-subtle/50 px-3.5 py-2.5 text-xs font-medium text-accent">
+                  <FileText className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
                   <span className="truncate">{doc.title || doc.originalName}</span>
                 </span>
               </li>
@@ -177,16 +218,18 @@ export default function StudyWorkspace() {
                 <li key={item._id}>
                   <Link
                     to={`/documents/${item._id}?tab=${tab}`}
-                    className="flex items-start gap-2 border-l-2 border-transparent px-3.5 py-2.5 text-sm text-slate-600 transition hover:border-slate-300 hover:bg-slate-50 hover:text-slate-900"
+                    className="flex items-center gap-2 border-l-2 border-transparent px-3.5 py-2.5 text-xs text-secondary transition hover:border-border-subtle hover:bg-subtle hover:text-primary"
                   >
+                    <FileText className="h-3.5 w-3.5 shrink-0 text-muted" aria-hidden="true" />
                     <span className="truncate">{item.title || item.originalName}</span>
                   </Link>
                 </li>
               ))}
             </ul>
-            <div className="border-t border-slate-100 p-3">
+            <div className="border-t border-border-subtle p-3">
               <Link to="/documents">
-                <Button variant="secondary" size="sm" fullWidth>
+                <Button variant="secondary" size="xs" fullWidth className="gap-1.5">
+                  <UploadCloud className="h-3.5 w-3.5" aria-hidden="true" />
                   Upload another PDF
                 </Button>
               </Link>
