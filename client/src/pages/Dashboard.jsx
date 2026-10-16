@@ -3,16 +3,15 @@ import { Link } from 'react-router-dom';
 import { toast } from 'sonner';
 import {
   Clock,
-  Calendar,
   AlertCircle,
   CheckCircle2,
-  Target,
   BookOpen,
   ListTodo,
   Plus,
   UploadCloud,
   ArrowRight,
   FileText,
+  Layers,
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext.jsx';
 import api, { apiErrorMessage } from '../lib/api.js';
@@ -22,16 +21,10 @@ import Alert from '../components/ui/Alert.jsx';
 import Badge from '../components/ui/Badge.jsx';
 import StatCard from '../components/ui/StatCard.jsx';
 import EmptyState from '../components/ui/EmptyState.jsx';
-import { ProgressRing } from '../components/ui/ProgressBar.jsx';
+import SegmentedTabs from '../components/ui/SegmentedTabs.jsx';
 import { SkeletonTaskList, SkeletonDocList } from '../components/ui/Skeleton.jsx';
 import TaskForm from '../components/tasks/TaskForm.jsx';
 import TaskItem from '../components/tasks/TaskItem.jsx';
-
-const filters = [
-  { key: 'all', label: 'All' },
-  { key: 'pending', label: 'Pending' },
-  { key: 'completed', label: 'Done' },
-];
 
 function greeting() {
   const hour = new Date().getHours();
@@ -44,6 +37,21 @@ function startOfToday() {
   const d = new Date();
   d.setHours(0, 0, 0, 0);
   return d;
+}
+
+function isDueToday(task) {
+  if (!task.dueDate) return false;
+  const due = new Date(task.dueDate);
+  const today = startOfToday();
+  const tomorrow = new Date(today.getTime() + 24 * 60 * 60 * 1000);
+  return due >= today && due < tomorrow;
+}
+
+function isUrgent(task) {
+  if (task.completed) return false;
+  if (task.priority === 'high') return true;
+  if (task.dueDate && new Date(task.dueDate) < startOfToday()) return true;
+  return false;
 }
 
 export default function Dashboard() {
@@ -60,7 +68,6 @@ export default function Dashboard() {
   const [saving, setSaving] = useState(false);
   const [busyId, setBusyId] = useState('');
 
-  // One pass fetches everything the dashboard shows; filtering happens client side.
   const load = useCallback(async () => {
     setError('');
     try {
@@ -85,20 +92,48 @@ export default function Dashboard() {
     load();
   }, [load]);
 
+  const todayTasksCount = useMemo(
+    () => tasks.filter((t) => !t.completed && isDueToday(t)).length,
+    [tasks]
+  );
+
+  const urgentTasksCount = useMemo(
+    () => tasks.filter(isUrgent).length,
+    [tasks]
+  );
+
   const visibleTasks = useMemo(() => {
-    if (filter === 'pending') return tasks.filter((t) => !t.completed);
+    if (filter === 'today') return tasks.filter((t) => isDueToday(t));
+    if (filter === 'urgent') return tasks.filter(isUrgent);
     if (filter === 'completed') return tasks.filter((t) => t.completed);
     return tasks;
   }, [tasks, filter]);
 
-  const focusTasks = useMemo(() => {
-    const today = startOfToday();
-    const endOfToday = new Date(today.getTime() + 24 * 60 * 60 * 1000);
+  const tabItems = useMemo(
+    () => [
+      { key: 'all', label: 'All', badge: tasks.length },
+      { key: 'today', label: 'Today', badge: todayTasksCount },
+      { key: 'urgent', label: 'Urgent', badge: urgentTasksCount },
+      { key: 'completed', label: 'Completed', badge: stats?.completed ?? 0 },
+    ],
+    [tasks.length, todayTasksCount, urgentTasksCount, stats?.completed]
+  );
 
-    return tasks
-      .filter((t) => !t.completed && t.dueDate && new Date(t.dueDate) < endOfToday)
-      .slice(0, 4);
-  }, [tasks]);
+  const totalPages = useMemo(
+    () => documents.reduce((sum, d) => sum + (d.pageCount || 0), 0),
+    [documents]
+  );
+
+  const materialsCount = useMemo(
+    () =>
+      documents.reduce(
+        (sum, d) => sum + (d.hasNotes ? 1 : 0) + (d.hasFlashcards ? 1 : 0) + (d.hasQuiz ? 1 : 0),
+        0
+      ),
+    [documents]
+  );
+
+  const recentDocs = useMemo(() => documents.slice(0, 4), [documents]);
 
   async function saveTask(values) {
     setSaving(true);
@@ -157,204 +192,89 @@ export default function Dashboard() {
   }
 
   const firstName = user?.name ? user.name.split(' ')[0] : 'Student';
-  const recentDocs = documents.slice(0, 3);
+  const todayFormatted = new Date().toLocaleDateString(undefined, {
+    weekday: 'long',
+    month: 'short',
+    day: 'numeric',
+  });
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div className="flex flex-wrap items-end justify-between gap-4">
+      {/* Cockpit Header */}
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between border-b border-border-subtle pb-5">
         <div>
-          <h1 className="text-2xl font-semibold tracking-tight text-primary sm:text-3xl">
+          <div className="inline-flex items-center gap-2 text-xs font-mono text-muted uppercase tracking-wider">
+            <span>{todayFormatted}</span>
+          </div>
+          <h1 className="mt-1 text-2xl font-semibold tracking-tight text-primary sm:text-3xl">
             {greeting()}, {firstName}
           </h1>
           <p className="mt-1 text-sm text-secondary">
             {loading
               ? 'Loading your FileSense workspace...'
               : stats?.overdue
-                ? `${stats.overdue} task${stats.overdue === 1 ? '' : 's'} overdue — worth clearing first.`
+                ? `${stats.overdue} task${stats.overdue === 1 ? '' : 's'} overdue. Recommended to resolve first.`
                 : stats?.dueToday
-                  ? `${stats.dueToday} task${stats.dueToday === 1 ? '' : 's'} due today. You've got this.`
+                  ? `${stats.dueToday} task${stats.dueToday === 1 ? '' : 's'} scheduled for today.`
                   : stats?.pending
-                    ? `${stats.pending} task${stats.pending === 1 ? '' : 's'} waiting, nothing due today.`
-                    : 'Everything is clear. Add a task or upload a PDF to get going.'}
+                    ? `${stats.pending} pending task${stats.pending === 1 ? '' : 's'} in your queue.`
+                    : 'All study tasks complete. Ready for new readings.'}
           </p>
         </div>
 
-        <div className="flex flex-wrap gap-2">
+        <div className="flex flex-wrap items-center gap-2.5">
           <Link to="/documents">
-            <Button variant="secondary" size="sm" className="gap-1.5">
+            <Button variant="primary" size="sm" className="gap-1.5">
               <UploadCloud className="h-4 w-4" aria-hidden="true" />
-              Upload PDF
+              <span>Upload Document</span>
             </Button>
           </Link>
-          <Button onClick={startCreate} size="sm" className="gap-1.5">
+          <Button onClick={startCreate} variant="secondary" size="sm" className="gap-1.5">
             <Plus className="h-4 w-4" aria-hidden="true" />
-            New task
+            <span>New Task</span>
           </Button>
         </div>
       </div>
 
-      <Alert type="error" onDismiss={() => setError('')}>
-        {error}
-      </Alert>
+      {error && (
+        <Alert type="danger" onDismiss={() => setError('')}>
+          {error}
+        </Alert>
+      )}
 
-      {/* Progress + stats */}
-      <div className="grid gap-4 lg:grid-cols-3">
-        <Card className="flex items-center gap-5 lg:col-span-1">
-          <ProgressRing value={stats?.completionRate ?? 0}>
-            <div>
-              <p className="font-mono text-xl font-semibold text-primary">{stats?.completionRate ?? 0}%</p>
-              <p className="text-[10px] font-mono uppercase tracking-wider text-muted">done</p>
-            </div>
-          </ProgressRing>
-          <div className="min-w-0">
-            <h2 className="font-medium tracking-tight text-primary text-sm sm:text-base">Study progress</h2>
-            <p className="mt-1 text-xs text-secondary font-mono">
-              {stats ? `${stats.completed} of ${stats.total} tasks completed` : '—'}
-            </p>
-            <p className="mt-2 text-xs text-muted">
-              {documents.length} PDF{documents.length === 1 ? '' : 's'} in your workspace
-            </p>
-          </div>
-        </Card>
-
-        <div className="grid grid-cols-2 gap-4 lg:col-span-2">
-          <StatCard
-            label="Pending"
-            value={stats?.pending ?? '—'}
-            icon={<Clock className="h-4 w-4" aria-hidden="true" />}
-            tone="indigo"
-          />
-          <StatCard
-            label="Due today"
-            value={stats?.dueToday ?? '—'}
-            icon={<Calendar className="h-4 w-4" aria-hidden="true" />}
-            tone="amber"
-          />
-          <StatCard
-            label="Overdue"
-            value={stats?.overdue ?? '—'}
-            icon={<AlertCircle className="h-4 w-4" aria-hidden="true" />}
-            tone="rose"
-          />
-          <StatCard
-            label="Completed"
-            value={stats?.completed ?? '—'}
-            hint={stats?.total ? `of ${stats.total} total` : ''}
-            icon={<CheckCircle2 className="h-4 w-4" aria-hidden="true" />}
-            tone="emerald"
-          />
-        </div>
+      {/* Authentic Metric Cards */}
+      <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
+        <StatCard
+          label="Library Documents"
+          value={documents.length}
+          hint={documents.length > 0 ? `${totalPages} total pages` : 'No PDFs uploaded'}
+          icon={<BookOpen className="h-4 w-4 stroke-[2]" aria-hidden="true" />}
+          tone="slate"
+        />
+        <StatCard
+          label="Pending Tasks"
+          value={stats?.pending ?? 0}
+          hint={stats?.dueToday ? `${stats.dueToday} due today` : 'No tasks due today'}
+          icon={<Clock className="h-4 w-4 stroke-[2]" aria-hidden="true" />}
+          tone="indigo"
+        />
+        <StatCard
+          label="Completed Tasks"
+          value={stats?.completed ?? 0}
+          hint={stats?.total ? `${stats.completionRate}% completion rate` : 'No tasks recorded'}
+          icon={<CheckCircle2 className="h-4 w-4 stroke-[2]" aria-hidden="true" />}
+          tone="emerald"
+        />
+        <StatCard
+          label="Generated Materials"
+          value={materialsCount}
+          hint={documents.length > 0 ? 'Notes, cards, and quizzes' : 'Upload PDF to generate'}
+          icon={<Layers className="h-4 w-4 stroke-[2]" aria-hidden="true" />}
+          tone="amber"
+        />
       </div>
 
-      {/* Focus + continue learning */}
-      <div className="grid gap-4 lg:grid-cols-2">
-        <Card padding="none">
-          <CardHeader
-            title="Today's focus"
-            subtitle="Due today or already overdue"
-            className="border-b border-border-subtle p-4 pb-3"
-          />
-          {loading ? (
-            <div className="p-4">
-              <SkeletonTaskList count={2} />
-            </div>
-          ) : focusTasks.length === 0 ? (
-            <EmptyState
-              icon={<Target className="h-6 w-6 text-muted" aria-hidden="true" />}
-              title="Nothing due right now"
-              text="Add a due date to a task and it will show up here."
-            />
-          ) : (
-            <ul>
-              {focusTasks.map((task) => (
-                <TaskItem
-                  key={task._id}
-                  task={task}
-                  busy={busyId === task._id}
-                  onToggle={toggleTask}
-                  onEdit={(t) => {
-                    setEditing(t);
-                    setShowForm(true);
-                  }}
-                  onDelete={deleteTask}
-                  compact
-                />
-              ))}
-            </ul>
-          )}
-        </Card>
-
-        <Card padding="none">
-          <CardHeader
-            title="Continue learning"
-            subtitle="Pick up where you left off"
-            action={
-              documents.length > 0 && (
-                <Link to="/documents">
-                  <Button variant="ghost" size="xs">
-                    View all
-                  </Button>
-                </Link>
-              )
-            }
-            className="border-b border-border-subtle p-4 pb-3"
-          />
-          {loading ? (
-            <div className="p-4">
-              <SkeletonDocList count={2} />
-            </div>
-          ) : recentDocs.length === 0 ? (
-            <EmptyState
-              icon={<BookOpen className="h-6 w-6 text-muted" aria-hidden="true" />}
-              title="No PDFs yet"
-              text="Upload a lecture PDF and FileSense will build notes, flashcards and a quiz from it."
-              action={
-                <Link to="/documents">
-                  <Button size="sm">Upload your first PDF</Button>
-                </Link>
-              }
-            />
-          ) : (
-            <ul>
-              {recentDocs.map((doc) => (
-                <li
-                  key={doc._id}
-                  className="flex flex-wrap items-center gap-3 border-b border-border-subtle px-4 py-3.5 transition-colors last:border-0 hover:bg-subtle/50"
-                >
-                  <span className="grid h-8 w-8 shrink-0 place-items-center rounded-md border border-border-subtle bg-subtle text-accent">
-                    <FileText className="h-4 w-4" aria-hidden="true" />
-                  </span>
-                  <div className="min-w-0 flex-1">
-                    <Link
-                      to={`/documents/${doc._id}`}
-                      className="block truncate text-sm font-medium text-primary hover:text-accent"
-                    >
-                      {doc.title || doc.originalName}
-                    </Link>
-                    <div className="mt-1 flex flex-wrap items-center gap-1.5">
-                      {doc.hasNotes && <Badge tone="emerald">Notes</Badge>}
-                      {doc.hasFlashcards && <Badge tone="emerald">Cards</Badge>}
-                      {doc.hasQuiz && <Badge tone="emerald">Quiz</Badge>}
-                      {!doc.hasNotes && !doc.hasFlashcards && !doc.hasQuiz && (
-                        <Badge tone="slate">Not generated yet</Badge>
-                      )}
-                    </div>
-                  </div>
-                  <Link to={`/documents/${doc._id}?tab=${doc.hasNotes ? 'quiz' : 'notes'}`}>
-                    <Button size="xs" variant="subtle" className="gap-1">
-                      {doc.hasNotes ? 'Take quiz' : 'Make notes'}
-                      <ArrowRight className="h-3 w-3" aria-hidden="true" />
-                    </Button>
-                  </Link>
-                </li>
-              ))}
-            </ul>
-          )}
-        </Card>
-      </div>
-
-      {/* Task form */}
+      {/* Inline Task Form */}
       {showForm && (
         <TaskForm
           task={editing}
@@ -367,79 +287,208 @@ export default function Dashboard() {
         />
       )}
 
-      {/* All tasks */}
-      <Card padding="none">
-        <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border-subtle p-4 pb-3">
-          <div>
-            <h2 className="font-medium tracking-tight text-primary text-sm sm:text-base">Study tasks</h2>
-            <p className="mt-0.5 text-xs text-muted font-mono">
-              {tasks.length} task{tasks.length === 1 ? '' : 's'} in total
-            </p>
-          </div>
-          <div className="flex gap-1 rounded-md border border-border-subtle bg-subtle p-0.5">
-            {filters.map((f) => (
-              <button
-                key={f.key}
-                type="button"
-                onClick={() => setFilter(f.key)}
-                className={`cursor-pointer rounded-sm px-2.5 py-1 text-xs font-medium transition-colors ${
-                  filter === f.key
-                    ? 'bg-surface text-primary shadow-xs'
-                    : 'text-muted hover:text-primary'
-                }`}
-              >
-                {f.label}
-              </button>
-            ))}
-          </div>
-        </div>
-
-        {loading ? (
-          <div className="p-4">
-            <SkeletonTaskList count={3} />
-          </div>
-        ) : visibleTasks.length === 0 ? (
-          <EmptyState
-            icon={
-              filter === 'completed' ? (
-                <CheckCircle2 className="h-6 w-6 text-muted" aria-hidden="true" />
-              ) : (
-                <ListTodo className="h-6 w-6 text-muted" aria-hidden="true" />
+      {/* Quick Launch & Task Management Section */}
+      <div className="space-y-6">
+        {/* Recent Documents Quick Launch */}
+        <Card padding="none">
+          <CardHeader
+            title="Recent Documents"
+            subtitle="Quick launch into your study materials"
+            action={
+              documents.length > 0 && (
+                <Link to="/documents">
+                  <Button variant="ghost" size="xs" className="gap-1 text-xs text-secondary hover:text-primary">
+                    <span>View library</span>
+                    <ArrowRight className="h-3 w-3" aria-hidden="true" />
+                  </Button>
+                </Link>
               )
             }
-            title={filter === 'completed' ? 'Nothing completed yet' : 'No tasks here'}
-            text={
-              filter === 'completed'
-                ? 'Finish a task and it will appear here.'
-                : 'Break your revision into small tasks and tick them off.'
-            }
-            action={
-              filter !== 'completed' && !showForm ? (
-                <Button size="sm" onClick={startCreate} className="gap-1.5">
-                  <Plus className="h-4 w-4" aria-hidden="true" />
-                  Add a task
-                </Button>
-              ) : null
-            }
+            className="border-b border-border-subtle p-4 pb-3"
           />
-        ) : (
-          <ul>
-            {visibleTasks.map((task) => (
-              <TaskItem
-                key={task._id}
-                task={task}
-                busy={busyId === task._id}
-                onToggle={toggleTask}
-                onEdit={(t) => {
-                  setEditing(t);
-                  setShowForm(true);
-                }}
-                onDelete={deleteTask}
+
+          {loading ? (
+            <div className="p-4">
+              <SkeletonDocList count={3} />
+            </div>
+          ) : recentDocs.length === 0 ? (
+            <EmptyState
+              icon={<BookOpen className="h-6 w-6 text-muted" aria-hidden="true" />}
+              title="No documents in your library"
+              text="Upload a course PDF to generate structured notes, active recall flashcards, and diagnostic quizzes."
+              action={
+                <Link to="/documents">
+                  <Button size="sm" variant="primary" className="gap-1.5">
+                    <UploadCloud className="h-4 w-4" aria-hidden="true" />
+                    Upload your first PDF
+                  </Button>
+                </Link>
+              }
+            />
+          ) : (
+            <ul className="divide-y divide-border-subtle">
+              {recentDocs.map((doc) => (
+                <li
+                  key={doc._id}
+                  className="flex flex-col gap-3 p-4 transition-colors hover:bg-subtle/40 sm:flex-row sm:items-center sm:justify-between"
+                >
+                  <div className="flex items-start gap-3 min-w-0">
+                    <span className="grid h-9 w-9 shrink-0 place-items-center rounded-md border border-border-subtle bg-subtle text-accent">
+                      <FileText className="h-4.5 w-4.5 stroke-[2]" aria-hidden="true" />
+                    </span>
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center gap-2">
+                        <Link
+                          to={`/documents/${doc._id}`}
+                          className="truncate text-sm font-medium text-primary hover:text-accent hover:underline"
+                        >
+                          {doc.title || doc.originalName}
+                        </Link>
+                        <span className="shrink-0 rounded-xs border border-border-subtle bg-subtle px-1.5 py-0.5 font-mono text-[10px] uppercase text-muted">
+                          PDF
+                        </span>
+                      </div>
+                      <div className="mt-1 flex flex-wrap items-center gap-2 text-xs">
+                        <span className="font-mono text-[11px] text-muted">
+                          {doc.pageCount || 1} {doc.pageCount === 1 ? 'page' : 'pages'}
+                        </span>
+                        <span className="text-muted">•</span>
+                        <div className="flex flex-wrap items-center gap-1">
+                          {doc.hasNotes && <Badge tone="emerald">Notes</Badge>}
+                          {doc.hasFlashcards && <Badge tone="emerald">Cards</Badge>}
+                          {doc.hasQuiz && <Badge tone="emerald">Quiz</Badge>}
+                          {!doc.hasNotes && !doc.hasFlashcards && !doc.hasQuiz && (
+                            <Badge tone="slate">Ready for AI</Badge>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="flex shrink-0 items-center gap-1.5 self-end sm:self-auto">
+                    <Link to={`/documents/${doc._id}?tab=notes`}>
+                      <Button
+                        variant={doc.hasNotes ? 'secondary' : 'ghost'}
+                        size="xs"
+                        className="text-xs"
+                      >
+                        Notes
+                      </Button>
+                    </Link>
+                    <Link to={`/documents/${doc._id}?tab=flashcards`}>
+                      <Button
+                        variant={doc.hasFlashcards ? 'secondary' : 'ghost'}
+                        size="xs"
+                        className="text-xs"
+                      >
+                        Cards
+                      </Button>
+                    </Link>
+                    <Link to={`/documents/${doc._id}?tab=quiz`}>
+                      <Button
+                        variant={doc.hasQuiz ? 'secondary' : 'ghost'}
+                        size="xs"
+                        className="text-xs"
+                      >
+                        Quiz
+                      </Button>
+                    </Link>
+                    <Link to={`/documents/${doc._id}`}>
+                      <Button
+                        variant="subtle"
+                        size="xs"
+                        className="gap-1 font-medium"
+                      >
+                        <span>Study</span>
+                        <ArrowRight className="h-3 w-3" aria-hidden="true" />
+                      </Button>
+                    </Link>
+                  </div>
+                </li>
+              ))}
+            </ul>
+          )}
+        </Card>
+
+        {/* Study Tasks & Schedule Card */}
+        <Card padding="none">
+          <div className="flex flex-col gap-3 border-b border-border-subtle p-4 pb-3 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <h2 className="text-base font-semibold tracking-tight text-primary">Study Tasks</h2>
+              <p className="mt-0.5 text-xs text-secondary">
+                Prioritize assignments and track syllabus coverage
+              </p>
+            </div>
+            <div className="w-full sm:w-auto">
+              <SegmentedTabs
+                items={tabItems}
+                value={filter}
+                onChange={setFilter}
               />
-            ))}
-          </ul>
-        )}
-      </Card>
+            </div>
+          </div>
+
+          {loading ? (
+            <div className="p-4">
+              <SkeletonTaskList count={3} />
+            </div>
+          ) : visibleTasks.length === 0 ? (
+            <EmptyState
+              icon={
+                filter === 'completed' ? (
+                  <CheckCircle2 className="h-6 w-6 text-muted" aria-hidden="true" />
+                ) : filter === 'urgent' ? (
+                  <AlertCircle className="h-6 w-6 text-muted" aria-hidden="true" />
+                ) : (
+                  <ListTodo className="h-6 w-6 text-muted" aria-hidden="true" />
+                )
+              }
+              title={
+                filter === 'completed'
+                  ? 'No completed tasks yet'
+                  : filter === 'urgent'
+                    ? 'No urgent tasks'
+                    : filter === 'today'
+                      ? 'No tasks scheduled for today'
+                      : 'No study tasks found'
+              }
+              text={
+                filter === 'completed'
+                  ? 'Check off completed items from your study queue.'
+                  : filter === 'urgent'
+                    ? 'Great job. You have zero overdue or high-priority tasks pending.'
+                    : filter === 'today'
+                      ? 'Nothing due today. Pick from your queue or add a new task.'
+                      : 'Create revision tasks to keep your exam preparation on track.'
+              }
+              action={
+                filter !== 'completed' && !showForm ? (
+                  <Button size="sm" variant="secondary" onClick={startCreate} className="gap-1.5">
+                    <Plus className="h-4 w-4" aria-hidden="true" />
+                    Add study task
+                  </Button>
+                ) : null
+              }
+            />
+          ) : (
+            <ul>
+              {visibleTasks.map((task) => (
+                <TaskItem
+                  key={task._id}
+                  task={task}
+                  busy={busyId === task._id}
+                  onToggle={toggleTask}
+                  onEdit={(t) => {
+                    setEditing(t);
+                    setShowForm(true);
+                  }}
+                  onDelete={deleteTask}
+                />
+              ))}
+            </ul>
+          )}
+        </Card>
+      </div>
     </div>
   );
 }

@@ -1,4 +1,4 @@
-import { Check } from 'lucide-react';
+import { Check, Pencil, Trash2 } from 'lucide-react';
 import Button from '../ui/Button.jsx';
 import Badge from '../ui/Badge.jsx';
 import Spinner from '../ui/Spinner.jsx';
@@ -69,18 +69,26 @@ export default function TaskItem({ task, onToggle, onEdit, onDelete, busy, compa
       </div>
 
       {/* Always visible on touch screens, revealed on hover on desktop */}
-      <div className="flex shrink-0 gap-1 opacity-100 transition-opacity duration-150 sm:opacity-0 sm:group-hover:opacity-100 sm:group-focus-within:opacity-100">
-        <Button variant="ghost" size="xs" onClick={() => onEdit(task)} disabled={busy}>
-          Edit
+      <div className="flex shrink-0 items-center gap-1 opacity-100 transition-opacity duration-150 sm:opacity-0 sm:group-hover:opacity-100 sm:group-focus-within:opacity-100">
+        <Button
+          variant="ghost"
+          size="xs"
+          onClick={() => onEdit(task)}
+          disabled={busy}
+          aria-label="Edit task"
+          className="h-7 w-7 p-0 text-secondary hover:text-primary"
+        >
+          <Pencil className="h-3.5 w-3.5 stroke-[2]" aria-hidden="true" />
         </Button>
         <Button
           variant="ghost"
           size="xs"
           onClick={() => onDelete(task)}
           disabled={busy}
-          className="text-danger hover:bg-danger-subtle hover:text-danger"
+          aria-label="Delete task"
+          className="h-7 w-7 p-0 text-danger hover:bg-danger-subtle hover:text-danger"
         >
-          Delete
+          <Trash2 className="h-3.5 w-3.5 stroke-[2]" aria-hidden="true" />
         </Button>
       </div>
     </li>

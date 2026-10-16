@@ -4,7 +4,6 @@ import Input from '../ui/Input.jsx';
 import Select from '../ui/Select.jsx';
 import Textarea from '../ui/Textarea.jsx';
 import Button from '../ui/Button.jsx';
-import Spinner from '../ui/Spinner.jsx';
 import { DEFAULT_TASK_SUBJECT } from '../../lib/constants.js';
 
 /** Turns an ISO date into the yyyy-mm-dd value an <input type="date"> needs. */
@@ -43,8 +42,8 @@ export default function TaskForm({ task, onSave, onCancel, saving }) {
   }
 
   return (
-    <Card className="animate-rise border-indigo-100 ring-1 ring-indigo-50">
-      <h2 className="font-semibold tracking-tight text-slate-900">
+    <Card className="animate-rise border border-border-subtle bg-surface shadow-xs">
+      <h2 className="text-base font-semibold tracking-tight text-primary">
         {task ? 'Edit study task' : 'New study task'}
       </h2>
 
@@ -53,7 +52,7 @@ export default function TaskForm({ task, onSave, onCancel, saving }) {
           id="title"
           name="title"
           label="What do you need to study?"
-          placeholder="Revise chapter 7 — integration"
+          placeholder="Revise chapter 7: integration"
           value={form.title}
           onChange={change}
           maxLength={120}
@@ -91,7 +90,7 @@ export default function TaskForm({ task, onSave, onCancel, saving }) {
                   key={q.label}
                   type="button"
                   onClick={() => setForm({ ...form, dueDate: q.value() })}
-                  className="rounded-full border border-slate-200 px-2 py-0.5 text-xs text-slate-600 transition hover:border-indigo-300 hover:bg-indigo-50 hover:text-indigo-700"
+                  className="rounded-md border border-border-subtle bg-subtle px-2 py-0.5 text-[11px] font-medium text-secondary transition-colors hover:border-accent hover:bg-surface hover:text-primary cursor-pointer"
                 >
                   {q.label}
                 </button>
@@ -112,8 +111,7 @@ export default function TaskForm({ task, onSave, onCancel, saving }) {
         />
 
         <div className="flex flex-col gap-2 sm:flex-row">
-          <Button type="submit" disabled={saving}>
-            {saving && <Spinner />}
+          <Button type="submit" loading={saving} variant="primary">
             {task ? 'Save changes' : 'Add task'}
           </Button>
           <Button type="button" variant="secondary" onClick={onCancel} disabled={saving}>
