@@ -138,7 +138,7 @@ export default function Dashboard() {
           </h1>
           <p className="mt-1 text-sm text-slate-600">
             {loading
-              ? 'Loading your workspace...'
+              ? 'Loading your FileSense workspace...'
               : stats?.overdue
                 ? `${stats.overdue} task${stats.overdue === 1 ? '' : 's'} overdue — worth clearing first.`
                 : stats?.dueToday
@@ -256,7 +256,7 @@ export default function Dashboard() {
             <EmptyState
               icon="📚"
               title="No PDFs yet"
-              text="Upload a lecture PDF and StudyMind will build notes, flashcards and a quiz from it."
+              text="Upload a lecture PDF and FileSense will build notes, flashcards and a quiz from it."
               action={
                 <Link to="/documents">
                   <Button size="sm">Upload your first PDF</Button>

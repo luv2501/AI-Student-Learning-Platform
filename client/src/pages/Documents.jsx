@@ -90,10 +90,10 @@ export default function Documents() {
     <div className="space-y-6">
       <div>
         <h1 className="text-2xl font-semibold tracking-tight text-slate-900 sm:text-3xl">
-          Study library
+          Document library
         </h1>
         <p className="mt-1 text-sm text-slate-600">
-          Upload a lecture PDF, then study it with AI notes, flashcards, quizzes and questions.
+          Upload any document to understand its contents with AI notes, flashcards, quizzes and questions.
         </p>
       </div>
 
@@ -176,7 +176,7 @@ export default function Documents() {
           <EmptyState
             icon="📚"
             title="Your library is empty"
-            text="Upload your first lecture PDF above and StudyMind will turn it into study material."
+            text="Upload your first document above and FileSense will turn it into study material."
           />
         ) : visible.length === 0 ? (
           <EmptyState

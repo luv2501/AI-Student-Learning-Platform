@@ -1,6 +1,7 @@
 {
-  "name": "studymind-server",
+  "name": "filesense-server",
   "version": "0.1.0",
+  "description": "FileSense backend API server",
   "private": true,
   "type": "module",
   "main": "src/server.js",

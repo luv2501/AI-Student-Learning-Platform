@@ -107,7 +107,7 @@ fs.rmSync(TEST_UPLOADS, { recursive: true, force: true });
 
 const mongo = await MongoMemoryServer.create();
 process.env.NODE_ENV = 'test';
-process.env.MONGO_URI = mongo.getUri('studymind_docs_test');
+process.env.MONGO_URI = mongo.getUri('filesense_docs_test');
 process.env.JWT_SECRET = 'test_secret_not_used_in_production';
 process.env.UPLOAD_DIR = TEST_UPLOADS;
 delete process.env.AI_API_KEY; // prove the no-key path is handled

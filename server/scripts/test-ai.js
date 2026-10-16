@@ -55,7 +55,7 @@ if (!process.env.AI_API_KEY) {
 }
 
 const mongo = await MongoMemoryServer.create();
-process.env.MONGO_URI = mongo.getUri('studymind_ai_test');
+process.env.MONGO_URI = mongo.getUri('filesense_ai_test');
 process.env.JWT_SECRET = 'test_secret_not_used_in_production';
 
 const { default: app } = await import('../src/app.js');

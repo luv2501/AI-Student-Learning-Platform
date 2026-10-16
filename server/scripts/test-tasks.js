@@ -36,7 +36,7 @@ async function call(method, path, { body, token, headers = {} } = {}) {
 
 const mongo = await MongoMemoryServer.create();
 process.env.NODE_ENV = 'test';
-process.env.MONGO_URI = mongo.getUri('studymind_tasks_test');
+process.env.MONGO_URI = mongo.getUri('filesense_tasks_test');
 process.env.JWT_SECRET = 'test_secret_not_used_in_production';
 
 const { default: app } = await import('../src/app.js');
@@ -187,61 +187,82 @@ console.log('\ndata isolation');
 
 console.log('\ntimezone-aware stats & filtering');
 {
-  const tokenTz = await signup('tz-student@example.com');
-  const kolkata = getUserTodayRange({ headers: { 'x-timezone': 'Asia/Kolkata' } });
-  const newYork = getUserTodayRange({ headers: { 'x-timezone': 'America/New_York' } });
+  const RealDate = global.Date;
+  // Pin time to 02:30 AM in Asia/Kolkata (when Kolkata is on Day 2 and New York is still on Day 1)
+  const mockNowMs = new RealDate('2026-10-15T02:30:00+05:30').getTime();
+  class MockDate extends RealDate {
+    constructor(...args) {
+      if (args.length === 0) {
+        super(mockNowMs);
+      } else {
+        super(...args);
+      }
+    }
+    static now() {
+      return mockNowMs;
+    }
+  }
+  global.Date = MockDate;
 
-  // Boundary task scheduled 2 hours before Kolkata midnight
-  // In Kolkata: this falls on yesterday (overdue)
-  // In New York: this falls during today (dueToday)
-  const boundaryDue = new Date(kolkata.startOfToday.getTime() - 2 * 60 * 60 * 1000).toISOString();
+  try {
+    const tokenTz = await signup('tz-student@example.com');
+    const kolkata = getUserTodayRange({ headers: { 'x-timezone': 'Asia/Kolkata' } });
+    const newYork = getUserTodayRange({ headers: { 'x-timezone': 'America/New_York' } });
 
-  await call('POST', '/tasks', {
-    token: tokenTz,
-    body: { title: 'Timezone boundary task', subject: 'Science', dueDate: boundaryDue },
-  });
+    // Boundary task scheduled 2 hours before Kolkata midnight
+    // In Kolkata: this falls on yesterday (overdue)
+    // In New York: this falls during today (dueToday)
+    const boundaryDue = new Date(kolkata.startOfToday.getTime() - 2 * 60 * 60 * 1000).toISOString();
 
-  // Evaluate in Asia/Kolkata context
-  const { data: statsKolkata } = await call('GET', '/tasks/stats', {
-    token: tokenTz,
-    headers: { 'X-Timezone': 'Asia/Kolkata' },
-  });
-  check(
-    'evaluates boundary task as overdue in Asia/Kolkata',
-    statsKolkata.stats?.overdue === 1 && statsKolkata.stats?.dueToday === 0,
-    JSON.stringify(statsKolkata.stats)
-  );
+    await call('POST', '/tasks', {
+      token: tokenTz,
+      body: { title: 'Timezone boundary task', subject: 'Science', dueDate: boundaryDue },
+    });
 
-  // Evaluate in America/New_York context
-  const { data: statsNY } = await call('GET', '/tasks/stats', {
-    token: tokenTz,
-    headers: { 'X-Timezone': 'America/New_York' },
-  });
-  check(
-    'evaluates boundary task as dueToday in America/New_York',
-    statsNY.stats?.dueToday === 1 && statsNY.stats?.overdue === 0,
-    JSON.stringify(statsNY.stats)
-  );
+    // Evaluate in Asia/Kolkata context
+    const { data: statsKolkata } = await call('GET', '/tasks/stats', {
+      token: tokenTz,
+      headers: { 'X-Timezone': 'Asia/Kolkata' },
+    });
+    check(
+      'evaluates boundary task as overdue in Asia/Kolkata',
+      statsKolkata.stats?.overdue === 1 && statsKolkata.stats?.dueToday === 0,
+      JSON.stringify(statsKolkata.stats)
+    );
 
-  // Query filtering with X-Timezone header
-  const listKolkata = await call('GET', '/tasks?due=overdue', {
-    token: tokenTz,
-    headers: { 'X-Timezone': 'Asia/Kolkata' },
-  });
-  check('list ?due=overdue in Asia/Kolkata returns boundary task', listKolkata.data.tasks?.length === 1);
+    // Evaluate in America/New_York context
+    const { data: statsNY } = await call('GET', '/tasks/stats', {
+      token: tokenTz,
+      headers: { 'X-Timezone': 'America/New_York' },
+    });
+    check(
+      'evaluates boundary task as dueToday in America/New_York',
+      statsNY.stats?.dueToday === 1 && statsNY.stats?.overdue === 0,
+      JSON.stringify(statsNY.stats)
+    );
 
-  const listNY = await call('GET', '/tasks?due=today', {
-    token: tokenTz,
-    headers: { 'X-Timezone': 'America/New_York' },
-  });
-  check('list ?due=today in America/New_York returns boundary task', listNY.data.tasks?.length === 1);
+    // Query filtering with X-Timezone header
+    const listKolkata = await call('GET', '/tasks?due=overdue', {
+      token: tokenTz,
+      headers: { 'X-Timezone': 'Asia/Kolkata' },
+    });
+    check('list ?due=overdue in Asia/Kolkata returns boundary task', listKolkata.data.tasks?.length === 1);
 
-  // Fallback to UTC on invalid timezone
-  const { data: statsInvalid } = await call('GET', '/tasks/stats', {
-    token: tokenTz,
-    headers: { 'X-Timezone': 'Invalid/Timezone_Name' },
-  });
-  check('invalid timezone falls back to UTC safely without crashing', typeof statsInvalid.stats?.total === 'number');
+    const listNY = await call('GET', '/tasks?due=today', {
+      token: tokenTz,
+      headers: { 'X-Timezone': 'America/New_York' },
+    });
+    check('list ?due=today in America/New_York returns boundary task', listNY.data.tasks?.length === 1);
+
+    // Fallback to UTC on invalid timezone
+    const { data: statsInvalid } = await call('GET', '/tasks/stats', {
+      token: tokenTz,
+      headers: { 'X-Timezone': 'Invalid/Timezone_Name' },
+    });
+    check('invalid timezone falls back to UTC safely without crashing', typeof statsInvalid.stats?.total === 'number');
+  } finally {
+    global.Date = RealDate;
+  }
 }
 
 console.log('\ndelete');

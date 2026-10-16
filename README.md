@@ -1,7 +1,7 @@
-# StudyMind — AI Student Learning Platform
+# FileSense — Understand Every Document
 
-An AI powered study planner and learning assistant: plan subjects and topics around your exam
-dates, turn lecture PDFs into summaries, flashcards and quizzes, and track daily progress.
+An AI powered document intelligence workspace: turn lecture PDFs and documents into summaries,
+flashcards, quizzes, and answers, understand every document, and track daily progress.
 
 ## Tech stack
 
@@ -37,7 +37,7 @@ server/            Express API
 
 The AI layer is provider-agnostic and interfaces with standard OpenAI-compatible chat completions (`/v1/chat/completions`). It defaults to **Groq** for fast inference using `openai/gpt-oss-20b` (or any model specified via `AI_MODEL`), authenticated via `AI_API_KEY`.
 
-> **Important**: StudyMind does **not** use Anthropic / Claude. All AI capabilities (lecture summaries & study notes, flashcard generation, quiz generation, and PDF Q&A) use OpenAI-compatible chat completion endpoints.
+> **Important**: FileSense does **not** use Anthropic / Claude. All AI capabilities (lecture summaries & study notes, flashcard generation, quiz generation, and PDF Q&A) use OpenAI-compatible chat completion endpoints.
 
 | Environment Variable | Default / Example | Purpose |
 | -------------------- | ----------------- | ------- |

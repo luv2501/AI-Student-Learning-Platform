@@ -38,7 +38,7 @@ async function call(method, path, { body, token } = {}) {
 // ---------- boot ----------
 const mongo = await MongoMemoryServer.create();
 process.env.NODE_ENV = 'test';
-process.env.MONGO_URI = mongo.getUri('studymind_test');
+process.env.MONGO_URI = mongo.getUri('filesense_test');
 process.env.JWT_SECRET = 'test_secret_not_used_in_production';
 process.env.JWT_EXPIRES_IN = '1h';
 
@@ -53,6 +53,7 @@ console.log('\nhealth');
 {
   const { status, data } = await call('GET', '/health');
   check('health returns ok', status === 200 && data.status === 'ok', JSON.stringify(data));
+  check('health reports FileSense API', data.api === 'FileSense API', data.api);
   check('health reports connected db', data.database === 'connected', data.database);
 }
 

@@ -18,9 +18,9 @@ export function Logo({ className = '' }) {
   return (
     <span className={`flex items-center gap-2 ${className}`}>
       <span className="grid h-8 w-8 place-items-center rounded-lg bg-gradient-to-br from-indigo-500 to-violet-600 text-sm font-bold text-white shadow-sm shadow-indigo-600/30">
-        SM
+        FS
       </span>
-      <span className="text-lg font-semibold tracking-tight text-slate-900">StudyMind</span>
+      <span className="text-lg font-semibold tracking-tight text-slate-900">FileSense</span>
     </span>
   );
 }
@@ -62,7 +62,7 @@ export default function Navbar() {
   return (
     <header className="sticky top-0 z-30 border-b border-slate-200 bg-white/80 backdrop-blur-md">
       <nav className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-4 py-3">
-        <Link to={user ? '/dashboard' : '/'} aria-label="StudyMind home">
+        <Link to={user ? '/dashboard' : '/'} aria-label="FileSense home">
           <Logo />
         </Link>
 

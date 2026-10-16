@@ -26,7 +26,7 @@ const DB_STATES = ['disconnected', 'connected', 'connecting', 'disconnecting'];
 app.get('/api/health', (req, res) => {
   res.json({
     status: 'ok',
-    api: 'StudyMind API',
+    api: 'FileSense API',
     database: DB_STATES[mongoose.connection.readyState] ?? 'unknown',
     time: new Date().toISOString(),
   });

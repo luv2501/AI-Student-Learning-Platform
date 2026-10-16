@@ -56,19 +56,19 @@ export default function Landing() {
         />
         <div className="relative">
           <span className="inline-flex items-center rounded-full bg-white/15 px-3 py-1 text-xs font-medium uppercase tracking-wider text-indigo-100 ring-1 ring-white/20">
-            Study smarter, not longer
+            FileSense — Understand every document
           </span>
           <h1 className="mx-auto mt-5 max-w-3xl text-4xl font-bold leading-tight tracking-tight sm:text-5xl">
-            Turn your lecture PDFs into a complete study workspace
+            Understand every document with FileSense
           </h1>
           <p className="mx-auto mt-4 max-w-xl text-base text-indigo-100 sm:text-lg">
-            StudyMind reads your documents and builds the notes, flashcards and quizzes you would
+            FileSense reads your documents and builds the notes, flashcards and quizzes you would
             have made yourself — then keeps your revision on track.
           </p>
           <div className="mt-9 flex flex-wrap justify-center gap-3">
             <Link to="/register">
               <Button size="lg" className="bg-white text-indigo-700 shadow-lg hover:bg-indigo-50">
-                Create free account
+                Get started with FileSense
               </Button>
             </Link>
             <Link to="/login">
@@ -129,13 +129,13 @@ export default function Landing() {
       {/* Closing CTA */}
       <section className="rounded-3xl border border-slate-200 bg-white px-6 py-12 text-center shadow-sm">
         <h2 className="text-2xl font-semibold tracking-tight text-slate-900">
-          Ready to make your next exam easier?
+          Ready to understand every document?
         </h2>
         <p className="mx-auto mt-2 max-w-md text-sm text-slate-600">
-          Free to start. Upload a PDF and see your first set of notes in under a minute.
+          Free to start. Upload a PDF and see your first set of notes in under a minute with FileSense.
         </p>
         <Link to="/register" className="mt-6 inline-block">
-          <Button size="lg">Get started</Button>
+          <Button size="lg">Get started with FileSense</Button>
         </Link>
       </section>
     </div>

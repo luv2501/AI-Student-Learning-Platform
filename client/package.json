@@ -1,6 +1,7 @@
 {
-  "name": "studymind-client",
+  "name": "filesense-client",
   "version": "0.1.0",
+  "description": "FileSense - Understand every document",
   "private": true,
   "type": "module",
   "scripts": {

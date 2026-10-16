@@ -1,6 +1,8 @@
 import { createContext, useContext, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import api, { TOKEN_KEY } from '../lib/api.js';
+import api, { AUTH_TOKEN_KEY, migrateAuthToken } from '../lib/api.js';
+
+export { AUTH_TOKEN_KEY };
 
 const AuthContext = createContext(null);
 
@@ -11,7 +13,8 @@ export function AuthProvider({ children }) {
 
   // On first load, restore the session from the stored token.
   useEffect(() => {
-    if (!localStorage.getItem(TOKEN_KEY)) {
+    const token = migrateAuthToken() || localStorage.getItem(AUTH_TOKEN_KEY);
+    if (!token) {
       setLoading(false);
       return;
     }
@@ -19,7 +22,7 @@ export function AuthProvider({ children }) {
     api
       .get('/auth/me')
       .then((res) => setUser(res.data.user))
-      .catch(() => localStorage.removeItem(TOKEN_KEY))
+      .catch(() => localStorage.removeItem(AUTH_TOKEN_KEY))
       .finally(() => setLoading(false));
   }, []);
 
@@ -38,7 +41,7 @@ export function AuthProvider({ children }) {
   }, [navigate]);
 
   function saveSession(data) {
-    localStorage.setItem(TOKEN_KEY, data.token);
+    localStorage.setItem(AUTH_TOKEN_KEY, data.token);
     setUser(data.user);
   }
 
@@ -53,7 +56,7 @@ export function AuthProvider({ children }) {
   }
 
   function logout() {
-    localStorage.removeItem(TOKEN_KEY);
+    localStorage.removeItem(AUTH_TOKEN_KEY);
     setUser(null);
   }
 

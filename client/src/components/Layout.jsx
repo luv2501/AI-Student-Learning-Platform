@@ -20,7 +20,7 @@ export default function Layout() {
       <footer className="border-t border-slate-200 bg-white">
         <div className="mx-auto flex max-w-6xl flex-col items-center justify-between gap-2 px-4 py-6 text-sm text-slate-500 sm:flex-row sm:px-6">
           <Logo className="opacity-70" />
-          <p>AI powered study workspace for students</p>
+          <p>© {new Date().getFullYear()} FileSense — Understand every document</p>
         </div>
       </footer>
     </div>

@@ -1,9 +1,9 @@
 import Card from './ui/Card.jsx';
 
 const points = [
-  'AI notes, flashcards and quizzes from your own PDFs',
-  'Ask questions about any document you upload',
-  'Track revision tasks and progress until exam day',
+  'AI notes, flashcards and quizzes from your own documents',
+  'Understand every document and ask questions with AI',
+  'Track study tasks and progress until exam day',
 ];
 
 /** Shared two-column shell for the login and register pages. */
@@ -12,7 +12,7 @@ export default function AuthLayout({ title, subtitle, children, footer }) {
     <div className="grid items-center gap-8 py-4 lg:grid-cols-2 lg:gap-12 lg:py-10">
       <div className="hidden lg:block">
         <h2 className="text-3xl font-semibold leading-tight tracking-tight text-slate-900">
-          Your AI study workspace, ready when you are
+          FileSense — Understand every document
         </h2>
         <ul className="mt-6 space-y-3">
           {points.map((point) => (

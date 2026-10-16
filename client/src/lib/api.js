@@ -1,6 +1,37 @@
 import axios from 'axios';
 
-export const TOKEN_KEY = 'studymind_token';
+export const AUTH_TOKEN_KEY = 'filesense_token';
+export const TOKEN_KEY = AUTH_TOKEN_KEY;
+
+export const LEGACY_TOKEN_KEY = 'studymind_token';
+
+/**
+ * One-time fallback migration:
+ * If 'filesense_token' is absent, check for legacy 'studymind_token'.
+ * If present, copy its value into 'filesense_token' and delete 'studymind_token'.
+ */
+export function migrateAuthToken() {
+  if (typeof window === 'undefined' || !window.localStorage) return null;
+  let token = localStorage.getItem(AUTH_TOKEN_KEY);
+  if (!token) {
+    const legacyToken = localStorage.getItem(LEGACY_TOKEN_KEY);
+    if (legacyToken) {
+      token = legacyToken;
+      localStorage.setItem(AUTH_TOKEN_KEY, legacyToken);
+      localStorage.removeItem(LEGACY_TOKEN_KEY);
+    }
+  }
+  return token;
+}
+
+// Proactively run migration on module import in browser environments
+if (typeof window !== 'undefined') {
+  try {
+    migrateAuthToken();
+  } catch {
+    /* ignore storage access errors */
+  }
+}
 
 /**
  * Single axios instance used by the whole app.
@@ -11,7 +42,7 @@ const api = axios.create({
 });
 
 api.interceptors.request.use((config) => {
-  const token = localStorage.getItem(TOKEN_KEY);
+  const token = migrateAuthToken() || localStorage.getItem(AUTH_TOKEN_KEY);
   if (token) config.headers.Authorization = `Bearer ${token}`;
 
   // Attach client timezone header for timezone-aware queries
@@ -36,7 +67,7 @@ api.interceptors.response.use(
       const isAuthEndpoint = url.includes('/auth/login') || url.includes('/auth/register');
 
       if (!isAuthEndpoint) {
-        localStorage.removeItem(TOKEN_KEY);
+        localStorage.removeItem(AUTH_TOKEN_KEY);
         window.dispatchEvent(
           new CustomEvent('auth:unauthorized', {
             detail: { message: 'Your session expired, please log in again' },
