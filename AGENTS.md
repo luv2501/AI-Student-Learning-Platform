@@ -87,7 +87,14 @@ When making non-trivial architectural, structural, or dependency decisions, docu
 - **Alternatives Considered**: Native `window.confirm` for deletion (less accessible and visually inconsistent with editorial design).
 - **Impact**: Zero regressions on document contracts (`node server/scripts/test-documents.js` passed 40/40); Vite production build passes with `0` errors.
 
+### [2026-10-19] - Editorial StudyWorkspace & AI Panels Redesign (Task 4.5.5)
+- **Context**: Task 4.5.5 requires redesigning `StudyWorkspace.jsx` and all five `client/src/components/pdf/` panels to meet `DESIGN.md` requirements: zero emojis, zero em-dashes, Geist Mono typography for metrics, WCAG AA contrast, and accessible UI patterns replacing any `window.confirm` calls.
+- **Decision**: Replaced `window.confirm` in `StudyWorkspace.jsx` with an accessible modal dialog matching the pattern established in `Documents.jsx`. Added escape-key handler and aria-modal attributes. Upgraded workspace header: breadcrumb nav with `ArrowLeft`, Geist Mono metadata row, and material-presence badges using `StickyNote`/`Layers`/`HelpCircle` icons. Redesigned `GeneratePrompt.jsx`: `PanelShell` subtitle now uses `font-mono text-xs text-muted` and a `border-b` section separator; idle state has `rounded-xl` icon container and improved spacing. Redesigned `NotesPanel.jsx`: zero-padded `padStart(2, '0')` key-point counters, left-accent-border callout for summary, hover section cards. Redesigned `FlashcardsPanel.jsx`: zero-padded `Card 04 / 18` Geist Mono progress tracker, renamed self-grading to `Mastered` / `Needs review` with `Check`/`X` icons and `aria-pressed` attributes, richer Sonner toast descriptions. Redesigned `QuizPanel.jsx`: editorial score summary card with zero-padded fraction, percentage chip with semantic color-border, `CheckCircle2`/`XCircle` correct/incorrect count row, accessible `aria-pressed` option buttons. Redesigned `AskPanel.jsx`: threaded chat with right-aligned user bubbles (`bg-accent rounded-xl rounded-br-sm`), left-aligned AI answers with `BookOpen` avatar chip, document citation chip in Geist Mono, autofocus after reply, improved suggestion chip styling.
+- **Alternatives Considered**: Full CSS flip-card 3D animation for flashcards (rejected per anti-vibecode: adds GPU-intensive transforms with no content value gain).
+- **Impact**: Zero regressions — `test-documents.js` 40/40, `test-api.js` 27/27, `test-tasks.js` 42/42; Vite production build exits `0`.
+
 ---
+
 
 ## 4. Mandatory Verification Checklist
 

@@ -6,7 +6,7 @@ import {
   RotateCcw,
   RefreshCw,
   Check,
-  RotateCw,
+  X,
   ChevronLeft,
   ChevronRight,
 } from 'lucide-react';
@@ -45,7 +45,9 @@ export default function FlashcardsPanel({ document: doc, onGenerated }) {
       setKnown((k) => {
         const next = { ...k, [index]: value };
         if (Object.keys(next).length === deck.length && deck.length > 0) {
-          toast.success('Flashcard session complete! All cards reviewed.');
+          toast.success('Session complete', {
+            description: `${Object.values(next).filter(Boolean).length} of ${deck.length} cards mastered.`,
+          });
         }
         return next;
       });
@@ -54,7 +56,7 @@ export default function FlashcardsPanel({ document: doc, onGenerated }) {
     [index, deck.length, move]
   );
 
-  // Keyboard shortcuts: space flips, arrows navigate, 1/2 mark the card.
+  // Keyboard shortcuts: space flips, arrows navigate, 1 = mastered, 2 = review again
   useEffect(() => {
     if (!deck.length) return;
 
@@ -79,7 +81,7 @@ export default function FlashcardsPanel({ document: doc, onGenerated }) {
       <GeneratePrompt
         icon={Layers}
         title="Flashcards"
-        text="Generate question and answer cards from this PDF, then flip through them to test your recall."
+        text="Generate question-and-answer cards from this document, then test your active recall by flipping through each one."
         label="Generate flashcards"
         loading={loading}
         error={error}
@@ -91,7 +93,8 @@ export default function FlashcardsPanel({ document: doc, onGenerated }) {
 
   const card = deck[Math.min(index, deck.length - 1)];
   const reviewed = Object.keys(known).length;
-  const knownCount = Object.values(known).filter(Boolean).length;
+  const masteredCount = Object.values(known).filter(Boolean).length;
+  const sessionDone = reviewed === deck.length && deck.length > 0;
 
   function shuffle() {
     const next = cards.map((_, i) => i);
@@ -103,7 +106,7 @@ export default function FlashcardsPanel({ document: doc, onGenerated }) {
     setIndex(0);
     setFlipped(false);
     setKnown({});
-    toast.info('Deck shuffled');
+    toast.info('Deck shuffled', { description: 'Card order randomized for fresh recall practice.' });
   }
 
   function reset() {
@@ -111,94 +114,135 @@ export default function FlashcardsPanel({ document: doc, onGenerated }) {
     setIndex(0);
     setFlipped(false);
     setKnown({});
-    toast.info('Session reset');
+    toast.info('Session reset', { description: 'All progress cleared. Starting from card 1.' });
   }
+
+  const cardNumStr = String(index + 1).padStart(2, '0');
+  const totalStr = String(deck.length).padStart(2, '0');
 
   return (
     <PanelShell
       title="Flashcards"
-      subtitle={`${deck.length} cards · ${knownCount} marked as known`}
+      subtitle={`${deck.length} card${deck.length === 1 ? '' : 's'} · ${masteredCount} mastered`}
       error={error}
       onDismissError={() => setError('')}
       actions={
         <>
-          <Button variant="secondary" size="xs" onClick={shuffle} className="gap-1">
+          <Button variant="secondary" size="xs" onClick={shuffle} className="gap-1.5">
             <Shuffle className="h-3.5 w-3.5" aria-hidden="true" />
             Shuffle
           </Button>
           {(order || reviewed > 0) && (
-            <Button variant="ghost" size="xs" onClick={reset} className="gap-1">
+            <Button variant="ghost" size="xs" onClick={reset} className="gap-1.5">
               <RotateCcw className="h-3.5 w-3.5" aria-hidden="true" />
-              Reset
+              Reset session
             </Button>
           )}
-          <Button variant="ghost" size="xs" onClick={() => run(true)} disabled={loading} className="gap-1">
-            {loading ? <Spinner /> : <RefreshCw className="h-3.5 w-3.5" aria-hidden="true" />}
+          <Button
+            variant="ghost"
+            size="xs"
+            onClick={() => run(true)}
+            disabled={loading}
+            className="gap-1.5"
+          >
+            {loading ? <Spinner aria-hidden="true" /> : <RefreshCw className="h-3.5 w-3.5" aria-hidden="true" />}
             New set
           </Button>
         </>
       }
     >
+      {/* Session progress bar */}
       <ProgressBar value={(reviewed / deck.length) * 100} label="Session progress" />
 
-      {/* Card — click or press space to flip */}
+      {/* Card flip area — click or press Space */}
       <button
         type="button"
         onClick={() => setFlipped((f) => !f)}
-        className="w-full text-left"
-        aria-label="Flip card"
+        className="w-full text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-1 rounded-xl"
+        aria-label={flipped ? 'Show question (Space to flip back)' : 'Reveal answer (Space to flip)'}
       >
         <Card
-          className={`min-h-56 cursor-pointer select-none transition-all duration-150 ${
-            flipped ? 'border-accent/40 bg-accent-subtle/30' : 'hover:border-primary/30'
+          className={`cursor-pointer select-none transition-all duration-150 ${
+            flipped
+              ? 'border-accent/50 bg-accent-subtle/20'
+              : 'hover:border-primary/30 hover:shadow-xs'
           }`}
         >
-          <div className="flex min-h-48 flex-col items-center justify-center gap-3 px-2 py-6 text-center">
-            <Badge tone={flipped ? 'indigo' : 'slate'}>{flipped ? 'Answer' : 'Question'}</Badge>
+          <div className="flex min-h-52 flex-col items-center justify-center gap-4 px-4 py-8 text-center">
+            {/* Side indicator */}
+            <Badge tone={flipped ? 'indigo' : 'slate'}>
+              {flipped ? 'Answer' : 'Question'}
+            </Badge>
+
+            {/* Card content */}
             <p
               key={`${index}-${flipped}`}
               className="animate-fade-in max-w-xl text-base font-medium leading-relaxed text-primary sm:text-lg"
             >
               {flipped ? card.answer : card.question}
             </p>
-            <p className="font-mono text-xs text-muted">
-              Card {index + 1} of {deck.length} · space to flip
-            </p>
+
+            {/* Geist Mono progress tracker */}
+            <div className="flex items-center gap-2 font-mono text-xs text-muted">
+              <span>
+                Card{' '}
+                <span className="font-semibold text-secondary">{cardNumStr}</span>
+                {' / '}
+                <span>{totalStr}</span>
+              </span>
+              <span aria-hidden="true">·</span>
+              <span>Space to flip</span>
+            </div>
           </div>
         </Card>
       </button>
 
-      {/* Self marking */}
+      {/* Self-grading triggers */}
       <div className="grid grid-cols-2 gap-3">
         <Button
           variant="secondary"
           onClick={() => mark(true)}
-          className={`gap-1.5 ${known[index] === true ? 'border-success/40 bg-success-subtle text-success' : ''}`}
+          className={`gap-2 ${
+            known[index] === true
+              ? 'border-success/50 bg-success-subtle text-success hover:bg-success-subtle'
+              : ''
+          }`}
+          aria-pressed={known[index] === true}
         >
           <Check className="h-4 w-4 stroke-[2.5]" aria-hidden="true" />
-          <span>I knew this</span>
+          <span>Mastered</span>
           <span className="hidden font-mono text-[10px] text-muted sm:inline">(1)</span>
         </Button>
         <Button
           variant="secondary"
           onClick={() => mark(false)}
-          className={`gap-1.5 ${known[index] === false ? 'border-warning/40 bg-warning-subtle text-warning' : ''}`}
+          className={`gap-2 ${
+            known[index] === false
+              ? 'border-warning/50 bg-warning-subtle text-warning hover:bg-warning-subtle'
+              : ''
+          }`}
+          aria-pressed={known[index] === false}
         >
-          <RotateCw className="h-3.5 w-3.5" aria-hidden="true" />
-          <span>Review again</span>
+          <X className="h-4 w-4 stroke-[2.5]" aria-hidden="true" />
+          <span>Needs review</span>
           <span className="hidden font-mono text-[10px] text-muted sm:inline">(2)</span>
         </Button>
       </div>
 
+      {/* Navigation */}
       <div className="flex items-center justify-between gap-2">
-        <Button variant="ghost" size="sm" onClick={() => move(-1)} className="gap-1">
+        <Button variant="ghost" size="sm" onClick={() => move(-1)} className="gap-1.5">
           <ChevronLeft className="h-4 w-4" aria-hidden="true" />
           Previous
         </Button>
         <span className="font-mono text-xs text-muted">
-          {reviewed === deck.length ? 'Deck complete' : `${deck.length - reviewed} left`}
+          {sessionDone ? (
+            <span className="text-success font-medium">Deck complete</span>
+          ) : (
+            `${deck.length - reviewed} card${deck.length - reviewed === 1 ? '' : 's'} remaining`
+          )}
         </span>
-        <Button variant="ghost" size="sm" onClick={() => move(1)} className="gap-1">
+        <Button variant="ghost" size="sm" onClick={() => move(1)} className="gap-1.5">
           Next
           <ChevronRight className="h-4 w-4" aria-hidden="true" />
         </Button>

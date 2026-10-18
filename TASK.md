@@ -105,13 +105,13 @@
   - [x] Minimal drag-and-drop file upload zone with Lucide `UploadCloud` icon, 25MB constraint notice, and progress bar.
   - [x] Responsive document cards grid with Geist Mono page count & file size metrics.
   - [x] Fast search filter, status presence tags (Notes, Flashcards, Quiz), and accessible delete safety confirmation.
-- [ ] Redesign `client/src/pages/DocumentDetail.jsx`:
-  - [ ] Sticky document header with title, page count, and action buttons.
-  - [ ] Tabbed workspace:
-    - **Notes**: Structured typography, section cards, copy button with toast feedback.
-    - **Flashcards**: Crisp card flip animation, keyboard shortcuts (`Space` to flip, `Arrow` to navigate), shuffle.
-    - **Quiz**: Clean option selector, instant answer feedback with explanation, score summary.
-    - **Ask Document (Q&A)**: Chat interface with grounded document answers and clean input bar.
+- [x] Redesign `client/src/pages/StudyWorkspace.jsx` and `client/src/components/pdf/*` (Task 4.5.5):
+  - [x] Editorial workspace header: breadcrumb nav, Geist Mono metadata row, material-presence badges, accessible delete confirmation modal.
+  - [x] `NotesPanel`: zero-padded key-point counters, left-accent summary callout, section grid with hover cards.
+  - [x] `FlashcardsPanel`: `Card 04 / 18` Geist Mono progress tracker, `Mastered` / `Needs review` aria-pressed grading buttons, Shuffle/Reset/New set actions.
+  - [x] `QuizPanel`: editorial score summary with zero-padded fraction, percentage chip, correct/incorrect breakdown with Lucide icons, accessible aria-pressed option rows.
+  - [x] `AskPanel`: threaded chat (user right-aligned, AI left-aligned with `BookOpen` avatar), document citation chip in Geist Mono, autofocus-on-reply, improved suggestion chips.
+  - [x] `GeneratePrompt`: refined first-run idle state with `rounded-xl` icon container and font-mono PanelShell subtitle.
 
 ---
 

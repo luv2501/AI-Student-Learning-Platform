@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { toast } from 'sonner';
-import { FileText, Copy, Check, Download, RefreshCw } from 'lucide-react';
+import { StickyNote, Copy, Check, Download, RefreshCw } from 'lucide-react';
 import Card from '../ui/Card.jsx';
 import Button from '../ui/Button.jsx';
 import Spinner from '../ui/Spinner.jsx';
@@ -11,7 +11,7 @@ function toMarkdown(notes, name) {
   const lines = [`# ${name.replace(/\.pdf$/i, '')}`, '', '## Summary', notes.summary, ''];
 
   if (notes.keyPoints?.length) {
-    lines.push('## Key points', ...notes.keyPoints.map((p) => `- ${p}`), '');
+    lines.push('## Key Points', ...notes.keyPoints.map((p) => `- ${p}`), '');
   }
   notes.sections?.forEach((section) => {
     lines.push(`## ${section.heading}`, ...section.points.map((p) => `- ${p}`), '');
@@ -28,9 +28,9 @@ export default function NotesPanel({ document: doc, onGenerated }) {
   if (!notes) {
     return (
       <GeneratePrompt
-        icon={FileText}
-        title="Study notes"
-        text="Turn this PDF into a short summary, the key points to remember, and section-by-section bullets."
+        icon={StickyNote}
+        title="Study Notes"
+        text="Turn this document into a structured summary, key points to remember, and section-by-section concept breakdowns."
         label="Generate notes"
         loading={loading}
         error={error}
@@ -50,7 +50,7 @@ export default function NotesPanel({ document: doc, onGenerated }) {
       toast.success('Notes copied to clipboard');
       setTimeout(() => setCopied(false), 2000);
     } catch {
-      const msg = 'Your browser blocked copying. Try downloading instead.';
+      const msg = 'Browser blocked clipboard access. Try downloading instead.';
       setError(msg);
       toast.error(msg);
     }
@@ -64,45 +64,69 @@ export default function NotesPanel({ document: doc, onGenerated }) {
     link.download = `${docTitle.replace(/\.pdf$/i, '')} notes.md`;
     link.click();
     URL.revokeObjectURL(url);
-    toast.success('Notes downloaded');
+    toast.success('Notes downloaded as Markdown');
   }
+
+  const keyPointCount = notes.keyPoints?.length || 0;
+  const sectionCount = notes.sections?.length || 0;
 
   return (
     <PanelShell
-      title="Study notes"
-      subtitle={`${notes.keyPoints?.length || 0} key points · ${notes.sections?.length || 0} sections`}
+      title="Study Notes"
+      subtitle={`${keyPointCount} key point${keyPointCount === 1 ? '' : 's'} · ${sectionCount} section${sectionCount === 1 ? '' : 's'}`}
       error={error}
       onDismissError={() => setError('')}
       actions={
         <>
-          <Button variant="secondary" size="xs" onClick={copy} className="gap-1">
-            {copied ? <Check className="h-3.5 w-3.5" aria-hidden="true" /> : <Copy className="h-3.5 w-3.5" aria-hidden="true" />}
-            {copied ? 'Copied' : 'Copy'}
+          <Button variant="secondary" size="xs" onClick={copy} className="gap-1.5">
+            {copied ? (
+              <Check className="h-3.5 w-3.5 stroke-[2.5]" aria-hidden="true" />
+            ) : (
+              <Copy className="h-3.5 w-3.5" aria-hidden="true" />
+            )}
+            {copied ? 'Copied' : 'Copy notes'}
           </Button>
-          <Button variant="secondary" size="xs" onClick={download} className="gap-1">
+          <Button variant="secondary" size="xs" onClick={download} className="gap-1.5">
             <Download className="h-3.5 w-3.5" aria-hidden="true" />
             Download
           </Button>
-          <Button variant="ghost" size="xs" onClick={() => run(true)} disabled={loading} className="gap-1">
-            {loading ? <Spinner /> : <RefreshCw className="h-3.5 w-3.5" aria-hidden="true" />}
+          <Button
+            variant="ghost"
+            size="xs"
+            onClick={() => run(true)}
+            disabled={loading}
+            className="gap-1.5"
+          >
+            {loading ? (
+              <Spinner aria-hidden="true" />
+            ) : (
+              <RefreshCw className="h-3.5 w-3.5" aria-hidden="true" />
+            )}
             Regenerate
           </Button>
         </>
       }
     >
-      <Card className="border-l-2 border-l-accent bg-surface">
-        <p className="text-[11px] font-mono font-medium uppercase tracking-wider text-accent">Summary</p>
+      {/* Summary callout */}
+      <div className="rounded-xl border-l-4 border-l-accent border border-border-subtle bg-surface p-4">
+        <p className="font-mono text-[10px] font-semibold uppercase tracking-widest text-accent">
+          Summary
+        </p>
         <p className="mt-2 text-sm leading-relaxed text-secondary">{notes.summary}</p>
-      </Card>
+      </div>
 
+      {/* Key points */}
       {notes.keyPoints?.length > 0 && (
         <Card>
-          <h3 className="font-medium tracking-tight text-primary text-sm">Key points to remember</h3>
-          <ul className="mt-3 space-y-2.5">
+          <h3 className="text-sm font-semibold tracking-tight text-primary">Key Points</h3>
+          <ul className="mt-3.5 space-y-2.5" role="list">
             {notes.keyPoints.map((point, i) => (
-              <li key={i} className="flex gap-3 text-xs leading-relaxed text-secondary">
-                <span className="mt-0.5 grid h-5 w-5 shrink-0 place-items-center rounded-sm border border-border-subtle bg-subtle font-mono text-[11px] font-semibold text-primary">
-                  {i + 1}
+              <li key={i} className="flex gap-3 text-sm leading-relaxed text-secondary">
+                <span
+                  className="mt-0.5 grid h-5 w-5 shrink-0 place-items-center rounded-sm border border-border-subtle bg-subtle font-mono text-[11px] font-semibold text-primary"
+                  aria-hidden="true"
+                >
+                  {String(i + 1).padStart(2, '0')}
                 </span>
                 <span className="leading-relaxed">{point}</span>
               </li>
@@ -111,15 +135,21 @@ export default function NotesPanel({ document: doc, onGenerated }) {
         </Card>
       )}
 
+      {/* Section breakdowns */}
       {notes.sections?.length > 0 && (
         <div className="grid gap-4 md:grid-cols-2">
           {notes.sections.map((section, i) => (
             <Card key={i} hover>
-              <h3 className="font-medium tracking-tight text-primary text-sm">{section.heading}</h3>
-              <ul className="mt-2.5 space-y-2">
+              <h3 className="text-sm font-semibold tracking-tight text-primary">
+                {section.heading}
+              </h3>
+              <ul className="mt-3 space-y-2" role="list">
                 {section.points.map((point, j) => (
-                  <li key={j} className="flex gap-2 text-xs leading-relaxed text-secondary">
-                    <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-xs bg-muted" />
+                  <li key={j} className="flex gap-2.5 text-xs leading-relaxed text-secondary">
+                    <span
+                      className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-border-subtle"
+                      aria-hidden="true"
+                    />
                     <span>{point}</span>
                   </li>
                 ))}

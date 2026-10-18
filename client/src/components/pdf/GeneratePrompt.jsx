@@ -26,7 +26,9 @@ export function useAiPanel(documentId, field, onGenerated) {
       );
       setData(res.data[field]);
       onGenerated?.(field, res.data[field]);
-      toast.success(`${fieldName} generated successfully`);
+      toast.success(`${fieldName} generated`, {
+        description: `AI ${fieldName.toLowerCase()} for this document are ready.`,
+      });
     } catch (err) {
       const msg = apiErrorMessage(err);
       setError(msg);
@@ -39,14 +41,19 @@ export function useAiPanel(documentId, field, onGenerated) {
   return { data, loading, error, run, setError };
 }
 
-/** Consistent panel shell: title, optional actions, error slot. */
+/**
+ * Consistent panel shell: section header, optional action buttons, and error slot.
+ * All panels render inside this wrapper for consistent spacing and typography.
+ */
 export function PanelShell({ title, subtitle, actions, error, onDismissError, children }) {
   return (
     <div className="space-y-4">
-      <div className="flex flex-wrap items-start justify-between gap-3">
+      <div className="flex flex-wrap items-start justify-between gap-3 border-b border-border-subtle pb-4">
         <div className="min-w-0">
-          <h2 className="font-medium tracking-tight text-primary text-base">{title}</h2>
-          {subtitle && <p className="mt-0.5 text-xs text-secondary">{subtitle}</p>}
+          <h2 className="text-base font-semibold tracking-tight text-primary">{title}</h2>
+          {subtitle && (
+            <p className="mt-0.5 font-mono text-xs text-muted">{subtitle}</p>
+          )}
         </div>
         {actions && <div className="flex flex-wrap gap-2">{actions}</div>}
       </div>
@@ -60,7 +67,7 @@ export function PanelShell({ title, subtitle, actions, error, onDismissError, ch
   );
 }
 
-/** First-run state: explain the tool, then generate it. */
+/** First-run state: explain the panel tool, then trigger AI generation. */
 export default function GeneratePrompt({ icon, title, text, label, loading, onGenerate, error, onDismissError }) {
   if (loading) {
     return (
@@ -80,21 +87,27 @@ export default function GeneratePrompt({ icon, title, text, label, loading, onGe
   };
 
   return (
-    <Card className="text-center">
-      <div className="mx-auto grid h-12 w-12 place-items-center rounded-md border border-border-subtle bg-subtle text-accent">
-        {renderIcon()}
+    <Card>
+      <div className="flex flex-col items-center px-4 py-6 text-center sm:px-8 sm:py-10">
+        <div className="grid h-14 w-14 place-items-center rounded-xl border border-border-subtle bg-subtle text-accent">
+          {renderIcon()}
+        </div>
+        <h2 className="mt-4 text-base font-semibold tracking-tight text-primary">{title}</h2>
+        <p className="mx-auto mt-1.5 max-w-md text-sm leading-relaxed text-secondary">{text}</p>
+
+        {error && (
+          <div className="mt-4 w-full max-w-md">
+            <Alert type="error" onDismiss={onDismissError}>
+              {error}
+            </Alert>
+          </div>
+        )}
+
+        <Button className="mt-6 gap-2" onClick={() => onGenerate()} disabled={loading}>
+          <Sparkles className="h-4 w-4 stroke-[1.75]" aria-hidden="true" />
+          {label}
+        </Button>
       </div>
-      <h2 className="mt-3.5 font-medium tracking-tight text-primary text-base">{title}</h2>
-      <p className="mx-auto mt-1 max-w-md text-xs leading-relaxed text-secondary">{text}</p>
-
-      <Alert type="error" className="mt-4 text-left" onDismiss={onDismissError}>
-        {error}
-      </Alert>
-
-      <Button className="mt-5 gap-1.5" onClick={() => onGenerate()} disabled={loading}>
-        {loading ? <Spinner /> : <Sparkles className="h-4 w-4" aria-hidden="true" />}
-        {label}
-      </Button>
     </Card>
   );
 }
