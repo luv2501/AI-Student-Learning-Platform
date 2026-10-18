@@ -33,6 +33,7 @@ export default function App() {
             <Route path="/dashboard" element={<Dashboard />} />
             <Route path="/documents" element={<Documents />} />
             <Route path="/documents/:id" element={<StudyWorkspace />} />
+            <Route path="/workspace/:id" element={<StudyWorkspace />} />
             <Route path="/profile" element={<Profile />} />
           </Route>
 

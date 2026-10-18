@@ -85,7 +85,43 @@ export function SkeletonDocItem() {
   );
 }
 
-export function SkeletonDocList({ count = 3 }) {
+/** High-fidelity card skeleton matching Documents library grid card. */
+export function SkeletonDocCard() {
+  return (
+    <div className="flex flex-col justify-between rounded-xl border border-border-subtle bg-surface p-5 space-y-4">
+      <div className="space-y-3">
+        <div className="flex items-start justify-between gap-3">
+          <Skeleton className="h-10 w-10 shrink-0 rounded-lg" />
+          <Skeleton className="h-7 w-7 rounded-md" />
+        </div>
+        <div className="space-y-2">
+          <Skeleton className="h-4 w-4/5" />
+          <Skeleton className="h-3.5 w-1/2" />
+        </div>
+        <div className="flex items-center gap-1.5 pt-1">
+          <Skeleton className="h-4 w-14 rounded-xs" />
+          <Skeleton className="h-4 w-16 rounded-xs" />
+          <Skeleton className="h-4 w-12 rounded-xs" />
+        </div>
+      </div>
+      <div className="pt-3 border-t border-border-subtle/60">
+        <Skeleton className="h-8 w-full rounded-md" />
+      </div>
+    </div>
+  );
+}
+
+export function SkeletonDocList({ count = 3, variant = 'list' }) {
+  if (variant === 'grid') {
+    return (
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        {Array.from({ length: count }).map((_, i) => (
+          <SkeletonDocCard key={i} />
+        ))}
+      </div>
+    );
+  }
+
   return (
     <div className="divide-y divide-border-subtle">
       {Array.from({ length: count }).map((_, i) => (

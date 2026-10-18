@@ -8,6 +8,7 @@ export default function Input({
   error,
   type = 'text',
   showPasswordToggle = false,
+  leftElement,
   rightElement,
   className = '',
   ...props
@@ -23,11 +24,18 @@ export default function Input({
         </label>
       )}
       <div className="relative">
+        {leftElement && (
+          <div className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 flex items-center">
+            {leftElement}
+          </div>
+        )}
         <input
           id={id}
           type={effectiveType}
           aria-invalid={error ? true : undefined}
           className={`w-full rounded-md border bg-surface px-3 py-2 text-sm text-primary outline-none transition-colors duration-150 placeholder:text-muted disabled:bg-subtle disabled:text-muted disabled:cursor-not-allowed ${
+            leftElement ? 'pl-9' : ''
+          } ${
             showPasswordToggle || rightElement ? 'pr-10' : ''
           } ${
             error

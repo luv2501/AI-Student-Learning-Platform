@@ -24,64 +24,87 @@
 ---
 
 ## Task 4.2: Component Library Upgrade & Lucide Icons
-- [ ] Refactor `Button.jsx`:
-  - [ ] Variants: `primary`, `secondary`, `subtle`, `ghost`, `destructive`.
-  - [ ] Loading spinner integration (using Lucide `Loader2`).
-  - [ ] Accessible focus rings (`focus-visible:ring-2`).
-- [ ] Refactor `Card.jsx`:
-  - [ ] Modern border styling (`border-border-subtle bg-surface`).
-  - [ ] Structured headers, dividers, and padding presets.
-- [ ] Refactor `Input.jsx` & Form Controls:
-  - [ ] Floating or clean label alignment, helper text, and error states.
-  - [ ] Password visibility toggle (`Eye` / `EyeOff` from Lucide).
-- [ ] Refactor `Badge.jsx` & `EmptyState.jsx`:
-  - [ ] Replace emoji icons with Lucide SVG icons.
-  - [ ] Muted, readable status tones (`neutral`, `success`, `warning`, `danger`, `accent`).
-- [ ] Setup `sonner` in root layout (`<Toaster />` with theme awareness).
+- [x] Refactor `Button.jsx`:
+  - [x] Variants: `primary`, `secondary`, `subtle`, `ghost`, `danger`.
+  - [x] Loading spinner integration.
+  - [x] Accessible focus rings (`focus-visible:ring-2`).
+- [x] Refactor `Card.jsx`:
+  - [x] Modern border styling (`border-border-subtle bg-surface`).
+  - [x] Structured headers, dividers, and padding presets.
+- [x] Refactor `Input.jsx` & Form Controls:
+  - [x] Clean label alignment, helper text, and error states.
+- [x] Refactor `Badge.jsx` & `EmptyState.jsx`:
+  - [x] Replace emoji icons with Lucide SVG icons.
+  - [x] Muted, readable status tones (`neutral`, `success`, `warning`, `danger`, `accent`).
+- [x] Setup `sonner` in root layout (`<Toaster />` with theme awareness).
 
 ---
 
-## Task 4.3: Modern App Shell (Desktop Sidebar + Mobile Bottom Bar)
-- [ ] Create `client/src/components/navigation/Sidebar.jsx`:
-  - [ ] Fixed/collapsible desktop sidebar (240px width).
-  - [ ] Brand `Logo` with mark and styled text.
-  - [ ] Navigation links with active states:
+## Task 4.3: Icons, Sonner Toasts & High-Fidelity Skeletons
+- [x] Install `sonner` and mount `<Toaster />` in `client/src/App.jsx` with dynamic theme awareness and semantic styling.
+- [x] Contextual Sonner toast notifications wired:
+  - [x] Document upload success / failure in `Documents.jsx`.
+  - [x] Document delete actions in `Documents.jsx` and `StudyWorkspace.jsx`.
+  - [x] Task creation, completion toggle, and delete in `Dashboard.jsx`.
+  - [x] AI material generation triggers (Notes, Flashcards, Quiz, Ask response) in `StudyWorkspace.jsx` and `GeneratePrompt.jsx`.
+- [x] Replaced 100% of remaining emoji icons and unicode symbols with clean Lucide SVG icons across:
+  - [x] `Landing.jsx` (feature list, steps, hero).
+  - [x] `Dashboard.jsx` (stat card chips, focus empty state, recent docs, task filters).
+  - [x] `StatCard.jsx` chips and UI banners.
+  - [x] `NotesPanel.jsx`, `FlashcardsPanel.jsx`, `QuizPanel.jsx`, `AskPanel.jsx`, and `TaskItem.jsx`.
+- [x] High-fidelity skeleton loaders:
+  - [x] Created `SkeletonTaskItem`, `SkeletonTaskList`, `SkeletonDocItem`, `SkeletonDocList`, and `SkeletonWorkspace` in `Skeleton.jsx`.
+  - [x] Wired high-fidelity skeletons into `Dashboard.jsx`, `Documents.jsx`, and `StudyWorkspace.jsx` matching real data dimensions and eliminating layout shifts.
+
+---
+
+## Task 4.4: App Shell (Collapsible Desktop Sidebar & Mobile Bottom Tab Bar)
+- [x] Create `client/src/components/navigation/Sidebar.jsx`:
+  - [x] Collapsible desktop sidebar (w-64 expanded, w-18 icon mode).
+  - [x] Brand `Logo` with mark-only toggle when collapsed.
+  - [x] Navigation links with active states:
     - Dashboard (`LayoutDashboard`)
-    - Documents (`FileText`)
+    - Library (`BookOpen`)
     - Tasks (`CheckSquare`)
-    - Profile (`Settings` / `User`)
-  - [ ] User profile footer with avatar initials, theme toggle, and logout button.
-- [ ] Create `client/src/components/navigation/MobileNav.jsx`:
-  - [ ] Top compact header with `Logo` and user trigger.
-  - [ ] Sticky bottom navigation bar with 4 core destination tabs.
-- [ ] Update `client/src/components/Layout.jsx`:
-  - [ ] Unify layout to render Sidebar on `md:` screens and MobileNav on smaller screens.
-  - [ ] Main viewport area with disciplined padding and responsive container bounds.
+    - Profile (`User`)
+  - [x] Bottom pinned section with user initials avatar, name/email, `ThemeToggle`, and Logout button.
+  - [x] Collapse toggle button with persistence in `localStorage.getItem('filesense_sidebar_collapsed')`.
+- [x] Create `client/src/components/navigation/MobileNav.jsx`:
+  - [x] Top compact header with `Logo`, `ThemeToggle`, and user initials dropdown.
+  - [x] Sticky bottom navigation tab bar with touch-friendly targets (minimum 44x44px hit areas).
+- [x] Create `client/src/components/navigation/PublicNav.jsx`:
+  - [x] Restrained top navbar for unauthenticated routes (`/`, `/login`, `/register`).
+- [x] Refactor `client/src/components/Layout.jsx`:
+  - [x] Public shell for visitor routes with restrained navbar, content, and minimal footer.
+  - [x] Authenticated shell with collapsible Sidebar on desktop (`md:`) and MobileNav on mobile (`< 768px`).
+  - [x] Disciplined viewport padding (`max-w-7xl`, `pb-24 md:pb-8`) preventing content overlap.
 
 ---
 
 ## Task 4.4: Core Workspace Redesign (Dashboard, Tasks & Settings)
-- [ ] Redesign `client/src/pages/Dashboard.jsx`:
-  - [ ] High-clarity greeting and real-time status summary.
-  - [ ] Genuine stat cards with Geist Mono digits and Lucide indicators.
-  - [ ] "Today's Focus" list with instant checkbox toggles.
-  - [ ] "Recent Documents" quick-action list.
-- [ ] Redesign Task Management (`TaskForm.jsx`, `TaskItem.jsx`):
-  - [ ] Replace custom prompt confirm with clean modal or inline delete.
-  - [ ] Add toast alerts via Sonner on task creation, completion, and deletion.
-  - [ ] Urgent/overdue visual hierarchy without neon colors.
-- [ ] Redesign `client/src/pages/Profile.jsx`:
-  - [ ] Account details card (Name, Email, Institution).
-  - [ ] Security card (Password update with strength indicators).
-  - [ ] Appearance settings card (Light / Dark / System mode selection).
+- [x] Redesign `client/src/pages/Dashboard.jsx` (Task 4.5.3):
+  - [x] High-clarity greeting and real-time status summary with localized date.
+  - [x] Genuine stat cards with Geist Mono digits and Lucide indicators (Documents, Pending, Completed, Generated Materials).
+  - [x] Segmented task filters (`All`, `Today`, `Urgent`, `Completed`) with `SegmentedTabs.jsx` and badge counts.
+  - [x] "Recent Documents" quick-action list with direct jump buttons (Notes, Cards, Quiz).
+- [x] Redesign Task Management (`TaskForm.jsx`, `TaskItem.jsx`):
+  - [x] Semantic design tokens, micro-radii buttons, and zero em-dashes.
+  - [x] Lucide `Pencil` and `Trash2` icon action triggers with accessible labels.
+  - [x] Toast alerts via Sonner on task creation, completion, and deletion.
+  - [x] Urgent/overdue visual hierarchy with semantic tokens.
+- [x] Redesign `client/src/pages/Profile.jsx`:
+  - [x] Account details card (Name, Email, Institution) with Sonner toast feedback.
+  - [x] Security card (Password update with password visibility toggles and mismatch validation).
+  - [x] Appearance settings card (Light / Dark / System mode selection paired with ThemeToggle).
+  - [x] Usage & activity metrics (Library Documents, Pages, Completed Tasks, Generated Materials).
 
 ---
 
 ## Task 4.5: Document Intelligence Redesign
-- [ ] Redesign `client/src/pages/Documents.jsx`:
-  - [ ] Minimal drag-and-drop file upload zone with Lucide `UploadCloud` icon.
-  - [ ] Document list with Geist Mono page count & file size metrics.
-  - [ ] Fast search filter and status tags.
+- [x] Redesign `client/src/pages/Documents.jsx` (Task 4.5.4):
+  - [x] Minimal drag-and-drop file upload zone with Lucide `UploadCloud` icon, 25MB constraint notice, and progress bar.
+  - [x] Responsive document cards grid with Geist Mono page count & file size metrics.
+  - [x] Fast search filter, status presence tags (Notes, Flashcards, Quiz), and accessible delete safety confirmation.
 - [ ] Redesign `client/src/pages/DocumentDetail.jsx`:
   - [ ] Sticky document header with title, page count, and action buttons.
   - [ ] Tabbed workspace:
@@ -93,12 +116,18 @@
 ---
 
 ## Task 4.6: Marketing & Auth Polish, Verification & Security Audit
-- [ ] Polish `client/src/pages/Landing.jsx`:
-  - [ ] Anti-vibecode hero with clear typography and dark/light mode balance.
-  - [ ] Features grid with Lucide icons and clean borders.
-  - [ ] Direct calls to action.
-- [ ] Polish `Login.jsx`, `Register.jsx`, and `AuthLayout.jsx`:
-  - [ ] Clean card layouts, inline error messages, and loading states.
+- [x] Redesign & Polish `client/src/pages/Landing.jsx` (Task 4.5.1):
+  - [x] Editorial minimalist hero in Public Sans with warm neutral base (`bg-base`).
+  - [x] Removed purple/blue gradient containers, abstract glowing blobs, and em-dashes.
+  - [x] Realistic high-utility document inspection preview frame.
+  - [x] Structured 4-step workflow pipeline with Lucide icons (`UploadCloud`, `FileText`, `CheckSquare`, `MessageSquare`).
+  - [x] WCAG AA contrast on all cards across light paper and dark slate modes.
+  - [x] Direct calls to action leading to `/register` and `/login`.
+- [x] Polish `Login.jsx`, `Register.jsx`, and `AuthLayout.jsx` (Task 4.5.2):
+  - [x] Editorial split shell in `AuthLayout.jsx` with product showcase and micro-radii containers.
+  - [x] Accessible form controls using refactored `Input`, `Button`, and `Alert` components.
+  - [x] Password visibility toggle with Lucide `Eye` and `EyeOff` icons.
+  - [x] High-contrast primary submit button with loading spinner state.
 - [ ] Frontend Security Audit:
   - [ ] Verify zero backend secrets (`AI_API_KEY`, `JWT_SECRET`, `MONGO_URI`) exist in client code.
   - [ ] Verify safe token storage under `filesense_token`.

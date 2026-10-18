@@ -53,6 +53,40 @@ When making non-trivial architectural, structural, or dependency decisions, docu
 - **Alternatives Considered**: Retaining ad-hoc slate/indigo hex values (causes dark mode breakage and inconsistent border radii).
 - **Impact**: All 13 UI primitives support theme tokens natively; verified clean Vite production build and server test suites passing.
 
+### [2026-10-17] - Lucide Icons, Sonner Toasts & High-Fidelity Skeletons
+- **Context**: Task 4.3 requires complete removal of emojis, wiring unified Sonner toasts across user actions, and high-fidelity skeleton loaders to prevent layout shifts.
+- **Decision**: Installed `sonner` and mounted `<Toaster />` in `App.jsx` with theme synchronization. Wired toasts for document upload/deletion, task creation/toggle/deletion, and AI generation triggers. Eliminated 100% of emojis across `Landing.jsx`, `Dashboard.jsx`, and study panels in favor of Lucide SVG icons. Extended `Skeleton.jsx` with domain-specific loaders (`SkeletonTaskItem`, `SkeletonTaskList`, `SkeletonDocItem`, `SkeletonDocList`, `SkeletonWorkspace`) matching the exact row heights and card bounds of loaded data.
+- **Alternatives Considered**: Ad-hoc alert banners (poor user feedback, causes UI bouncing).
+- **Impact**: All async operations provide immediate toast feedback; zero jarring layout shifts during data loading.
+
+### [2026-10-17] - Collapsible Desktop Sidebar & Mobile Bottom Tab Bar
+- **Context**: Task 4.4 requires split public vs authenticated shell layouts, responsive desktop sidebar with state persistence, and touch-friendly mobile bottom navigation.
+- **Decision**: Created `Sidebar.jsx` (supporting collapsible `w-64` / `w-18` icon mode with `localStorage` persistence, mark toggle, user initials, and logout button), `MobileNav.jsx` (`MobileHeader` + `MobileBottomBar` with 44px touch targets), and `PublicNav.jsx` for visitor routes. Updated `Layout.jsx` to dynamically switch shells based on authentication state, with disciplined viewport paddings.
+- **Alternatives Considered**: Retaining single top navbar for all screens (causes mobile navigation clutter and suboptimal workspace screen real estate on desktop).
+- **Impact**: Zero regressions on `ProtectedRoute` or `GuestRoute`; clean responsive layout across all breakpoints.
+
+### [2026-10-17] - Editorial Landing Page Redesign (Task 4.5.1)
+- **Context**: Task 4.5.1 requires full compliance with `DESIGN.md` rules on `Landing.jsx` (zero purple/blue gradient containers, zero ambient blur blobs, zero em-dashes, and verified WCAG AA contrast).
+- **Decision**: Redesigned hero with warm neutral `bg-base` and restrained `bg-accent` CTA. Replaced abstract gradient container with an authentic, high-utility document inspection preview frame. Converted 3-column bento grids into a structured 4-step workflow pipeline with Lucide SVG icons and micro-radii. Removed 100% of em-dashes and emojis from marketing copy.
+- **Alternatives Considered**: Generic SaaS gradient hero (rejected per Anti-Vibecode rules).
+### [2026-10-17] - Editorial Auth Shell, Login & Register Redesign (Task 4.5.2)
+- **Context**: Task 4.5.2 requires an editorial split shell for visitor authentication routes (`AuthLayout.jsx`) and modern accessible forms for `Login.jsx` and `Register.jsx` with password visibility toggle and semantic tokens.
+- **Decision**: Refactored `AuthLayout.jsx` into a 12-column editorial split shell: left panel showcases 4 key document intelligence capabilities (`MessageSquare`, `FileText`, `Layers`, `CheckSquare`) with micro-radii containers and quiet trust proof; right panel provides a high-contrast form container using `bg-surface` and `border-border-subtle`. Upgraded `Input.jsx` to support `showPasswordToggle` with Lucide `Eye` and `EyeOff` icons. Upgraded `Button.jsx` to support a loading state with Lucide `Loader2`. Refactored `Login.jsx` and `Register.jsx` to use semantic tokens, standard autocomplete attributes (`email`, `current-password`, `new-password`), and accessible inline validation messages.
+- **Alternatives Considered**: Floating modal auth popups (poor mobile ergonomics and cluttered UX).
+### [2026-10-17] - Editorial Dashboard & Task Management Redesign (Task 4.5.3)
+- **Context**: Task 4.5.3 requires modernizing `Dashboard.jsx`, `TaskItem.jsx`, and `TaskForm.jsx` with authentic Geist Mono metrics, SegmentedTabs task filtering, Lucide icon triggers, and high-utility recent document quick launch.
+- **Decision**: Refactored cockpit header with localized date formatting and status subtext. Implemented 4 authentic `StatCard` metrics (`Documents in Library`, `Pending Tasks`, `Completed Tasks`, `Generated Materials`) computed from live data. Integrated `SegmentedTabs` for task management (`All`, `Today`, `Urgent`, `Completed`) with dynamic badge counters. Upgraded `TaskItem` with Lucide `Pencil` and `Trash2` action buttons. Upgraded `TaskForm` with semantic design tokens and eliminated em-dashes. Enhanced Recent Documents with PDF badges, page counts, generation badges, and 1-click jump buttons (`Notes`, `Cards`, `Quiz`, `Study`).
+- **Alternatives Considered**: Retaining circular progress ring alongside fragmented stat boxes (caused visual clutter and uneven grid balance).
+### [2026-10-17] - Editorial Profile Page Redesign & Route Fix
+- **Context**: The Profile route was crashing or unresponsive due to unguarded state initialization against `user` attributes before context hydration, alongside outdated non-semantic gradient styling.
+- **Decision**: Redesigned `Profile.jsx` following `DESIGN.md`: defensive state initialization with context synchronization, authentic usage statistics (`Documents in Library`, `Completed Tasks`, `Generated Materials`, `Account Status`), user details management with Sonner toasts, appearance settings card featuring active theme resolution and explicit Light/Dark/System controls, and password change with accessible password visibility toggles (`Eye`/`EyeOff`) and mismatch validation. Verified navigation links in `Sidebar.jsx` and `MobileNav.jsx` cleanly target `/profile`.
+- **Alternatives Considered**: Basic unstyled placeholder (rejected per anti-vibecode and full functionality guidelines).
+### [2026-10-18] - Editorial Documents Library Redesign (Task 4.5.4)
+- **Context**: Task 4.5.4 requires redesigning `Documents.jsx` with an editorial minimalism layout adhering strictly to `DESIGN.md`: zero emojis, zero em-dashes, Public Sans + Geist Mono typography, WCAG AA contrast, drag-and-drop upload zone with progress indicator, responsive cards grid, search filtering, presence badges, and accessible delete confirmation.
+- **Decision**: Refactored `Documents.jsx` into an editorial document intelligence cockpit. Enhanced `Input.jsx` with `leftElement` support for search inputs. Updated `Skeleton.jsx` with `SkeletonDocCard` and added `variant="grid"` support to `SkeletonDocList` for zero layout shifts. Implemented drag-and-drop dropzone with `UploadCloud`, explicit 25MB constraint notice, native file picker trigger, and real-time upload progress with `ProgressBar.jsx` and Sonner toasts. Converted list to a responsive cards grid (`Card.jsx`) with PDF badge, title, Geist Mono metadata row (page count, file size, date), material presence badges (Notes, Flashcards, Quiz), full-width "Open Workspace" action button, and an accessible delete confirmation modal dialog with Sonner toast feedback. Added `/workspace/:id` route alias in `App.jsx`.
+- **Alternatives Considered**: Native `window.confirm` for deletion (less accessible and visually inconsistent with editorial design).
+- **Impact**: Zero regressions on document contracts (`node server/scripts/test-documents.js` passed 40/40); Vite production build passes with `0` errors.
+
 ---
 
 ## 4. Mandatory Verification Checklist
