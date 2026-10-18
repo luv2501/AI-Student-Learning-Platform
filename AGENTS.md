@@ -93,6 +93,12 @@ When making non-trivial architectural, structural, or dependency decisions, docu
 - **Alternatives Considered**: Full CSS flip-card 3D animation for flashcards (rejected per anti-vibecode: adds GPU-intensive transforms with no content value gain).
 - **Impact**: Zero regressions — `test-documents.js` 40/40, `test-api.js` 27/27, `test-tasks.js` 42/42; Vite production build exits `0`.
 
+### [2026-10-19] - Editorial NotFound Page Redesign (Task 4.5.6)
+- **Context**: Task 4.5.6 requires redesigning `NotFound.jsx` in accordance with `DESIGN.md`: eliminate rainbow gradient text, hardcoded slate hex codes, and emojis; provide a Geist Mono numerical error chip, clean headline, restrained subtext free of em-dashes, and contextual primary/secondary action triggers.
+- **Decision**: Redesigned `NotFound.jsx` into an editorial error shell: centered container on `bg-base`, Geist Mono `404 // NOT_FOUND` chip using semantic tokens (`bg-subtle`, `border-border-subtle`, `text-accent`), high-contrast Public Sans headline and subtext, and context-aware action buttons ("Back to Dashboard" / "Open Library" for authenticated users; "Back to Home" / "Sign In" for visitors). Verified catch-all `<Route path="*" element={<NotFound />} />` in `App.jsx`.
+- **Alternatives Considered**: Generic illustration or playful error page (rejected per anti-vibecode: honest, high-utility minimalism preferred).
+- **Impact**: Zero compilation errors on Vite production build; 100% test pass rate across all server test suites.
+
 ---
 
 

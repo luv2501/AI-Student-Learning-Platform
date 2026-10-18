@@ -112,6 +112,12 @@
   - [x] `QuizPanel`: editorial score summary with zero-padded fraction, percentage chip, correct/incorrect breakdown with Lucide icons, accessible aria-pressed option rows.
   - [x] `AskPanel`: threaded chat (user right-aligned, AI left-aligned with `BookOpen` avatar), document citation chip in Geist Mono, autofocus-on-reply, improved suggestion chips.
   - [x] `GeneratePrompt`: refined first-run idle state with `rounded-xl` icon container and font-mono PanelShell subtitle.
+- [x] Redesign `client/src/pages/NotFound.jsx` (Task 4.5.6):
+  - [x] Centered minimal editorial container on `bg-base` with high-contrast inks.
+  - [x] Geist Mono numerical error chip (`404 // NOT_FOUND`).
+  - [x] Editorial headline "Page not found" with restrained helper subtext free of em-dashes.
+  - [x] Primary action "Back to Dashboard" (`/dashboard`) and secondary action "Open Library" (`/documents`).
+  - [x] Verified catch-all route integrity in `client/src/App.jsx`.
 
 ---
 
