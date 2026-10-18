@@ -12,6 +12,7 @@ import {
   ArrowRight,
   FileText,
   Layers,
+  AlertTriangle,
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext.jsx';
 import api, { apiErrorMessage } from '../lib/api.js';
@@ -22,6 +23,8 @@ import Badge from '../components/ui/Badge.jsx';
 import StatCard from '../components/ui/StatCard.jsx';
 import EmptyState from '../components/ui/EmptyState.jsx';
 import SegmentedTabs from '../components/ui/SegmentedTabs.jsx';
+import Modal from '../components/ui/Modal.jsx';
+import MotionTransition from '../components/ui/MotionTransition.jsx';
 import { SkeletonTaskList, SkeletonDocList } from '../components/ui/Skeleton.jsx';
 import TaskForm from '../components/tasks/TaskForm.jsx';
 import TaskItem from '../components/tasks/TaskItem.jsx';
@@ -67,6 +70,7 @@ export default function Dashboard() {
   const [editing, setEditing] = useState(null);
   const [saving, setSaving] = useState(false);
   const [busyId, setBusyId] = useState('');
+  const [taskToDelete, setTaskToDelete] = useState(null);
 
   const load = useCallback(async () => {
     setError('');
@@ -182,8 +186,7 @@ export default function Dashboard() {
     );
 
   const deleteTask = (task) => {
-    if (!window.confirm(`Delete "${task.title}"?`)) return;
-    runOnTask(task, () => api.delete(`/tasks/${task._id}`), 'Task deleted');
+    setTaskToDelete(task);
   };
 
   function startCreate() {
@@ -432,63 +435,128 @@ export default function Dashboard() {
             <div className="p-4">
               <SkeletonTaskList count={3} />
             </div>
-          ) : visibleTasks.length === 0 ? (
-            <EmptyState
-              icon={
-                filter === 'completed' ? (
-                  <CheckCircle2 className="h-6 w-6 text-muted" aria-hidden="true" />
-                ) : filter === 'urgent' ? (
-                  <AlertCircle className="h-6 w-6 text-muted" aria-hidden="true" />
-                ) : (
-                  <ListTodo className="h-6 w-6 text-muted" aria-hidden="true" />
-                )
-              }
-              title={
-                filter === 'completed'
-                  ? 'No completed tasks yet'
-                  : filter === 'urgent'
-                    ? 'No urgent tasks'
-                    : filter === 'today'
-                      ? 'No tasks scheduled for today'
-                      : 'No study tasks found'
-              }
-              text={
-                filter === 'completed'
-                  ? 'Check off completed items from your study queue.'
-                  : filter === 'urgent'
-                    ? 'Great job. You have zero overdue or high-priority tasks pending.'
-                    : filter === 'today'
-                      ? 'Nothing due today. Pick from your queue or add a new task.'
-                      : 'Create revision tasks to keep your exam preparation on track.'
-              }
-              action={
-                filter !== 'completed' && !showForm ? (
-                  <Button size="sm" variant="secondary" onClick={startCreate} className="gap-1.5">
-                    <Plus className="h-4 w-4" aria-hidden="true" />
-                    Add study task
-                  </Button>
-                ) : null
-              }
-            />
           ) : (
-            <ul>
-              {visibleTasks.map((task) => (
-                <TaskItem
-                  key={task._id}
-                  task={task}
-                  busy={busyId === task._id}
-                  onToggle={toggleTask}
-                  onEdit={(t) => {
-                    setEditing(t);
-                    setShowForm(true);
-                  }}
-                  onDelete={deleteTask}
+            <MotionTransition key={filter}>
+              {visibleTasks.length === 0 ? (
+                <EmptyState
+                  icon={
+                    filter === 'completed' ? (
+                      <CheckCircle2 className="h-6 w-6 text-muted" aria-hidden="true" />
+                    ) : filter === 'urgent' ? (
+                      <AlertCircle className="h-6 w-6 text-muted" aria-hidden="true" />
+                    ) : (
+                      <ListTodo className="h-6 w-6 text-muted" aria-hidden="true" />
+                    )
+                  }
+                  title={
+                    filter === 'completed'
+                      ? 'No completed tasks yet'
+                      : filter === 'urgent'
+                        ? 'No urgent tasks'
+                        : filter === 'today'
+                          ? 'No tasks scheduled for today'
+                          : 'No study tasks found'
+                  }
+                  text={
+                    filter === 'completed'
+                      ? 'Check off completed items from your study queue.'
+                      : filter === 'urgent'
+                        ? 'Great job. You have zero overdue or high-priority tasks pending.'
+                        : filter === 'today'
+                          ? 'Nothing due today. Pick from your queue or add a new task.'
+                          : 'Create revision tasks to keep your exam preparation on track.'
+                  }
+                  action={
+                    filter !== 'completed' && !showForm ? (
+                      <Button size="sm" variant="secondary" onClick={startCreate} className="gap-1.5">
+                        <Plus className="h-4 w-4" aria-hidden="true" />
+                        Add study task
+                      </Button>
+                    ) : null
+                  }
                 />
-              ))}
-            </ul>
+              ) : (
+                <ul>
+                  {visibleTasks.map((task) => (
+                    <TaskItem
+                      key={task._id}
+                      task={task}
+                      busy={busyId === task._id}
+                      onToggle={toggleTask}
+                      onEdit={(t) => {
+                        setEditing(t);
+                        setShowForm(true);
+                      }}
+                      onDelete={deleteTask}
+                    />
+                  ))}
+                </ul>
+              )}
+            </MotionTransition>
           )}
         </Card>
       </div>
+
+      {/* Delete Task Confirmation Modal */}
+      <Modal
+        isOpen={Boolean(taskToDelete)}
+        onClose={() => setTaskToDelete(null)}
+      >
+        {taskToDelete && (
+          <>
+            <div className="flex items-start gap-3.5">
+              <div className="grid h-10 w-10 shrink-0 place-items-center rounded-lg border border-danger/30 bg-danger-subtle text-danger">
+                <AlertTriangle className="h-5 w-5 stroke-[2]" aria-hidden="true" />
+              </div>
+              <div className="min-w-0 flex-1">
+                <h3
+                  id="modal-dialog-title"
+                  className="text-base font-semibold tracking-tight text-primary"
+                >
+                  Delete Task
+                </h3>
+                <p
+                  id="modal-dialog-description"
+                  className="mt-1 text-xs text-secondary leading-relaxed"
+                >
+                  Are you sure you want to delete{' '}
+                  <span className="font-semibold text-primary">
+                    &quot;{taskToDelete.title}&quot;
+                  </span>
+                  ? This task will be permanently removed.
+                </p>
+              </div>
+            </div>
+
+            <div className="mt-6 flex items-center justify-end gap-2.5">
+              <Button
+                variant="secondary"
+                size="sm"
+                onClick={() => setTaskToDelete(null)}
+                disabled={busyId === taskToDelete._id}
+              >
+                Cancel
+              </Button>
+              <Button
+                variant="danger"
+                size="sm"
+                loading={busyId === taskToDelete._id}
+                onClick={async () => {
+                  const toDelete = taskToDelete;
+                  setTaskToDelete(null);
+                  await runOnTask(
+                    toDelete,
+                    () => api.delete(`/tasks/${toDelete._id}`),
+                    'Task deleted'
+                  );
+                }}
+              >
+                Delete Task
+              </Button>
+            </div>
+          </>
+        )}
+      </Modal>
     </div>
   );
 }

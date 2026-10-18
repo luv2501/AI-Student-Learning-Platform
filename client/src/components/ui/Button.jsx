@@ -38,6 +38,7 @@ export default function Button({
     <button
       type={type}
       disabled={disabled || loading}
+      aria-busy={loading ? true : undefined}
       className={`inline-flex cursor-pointer items-center justify-center rounded-md font-medium tracking-tight transition-colors duration-150 active:scale-[0.99] disabled:pointer-events-none disabled:opacity-40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-1 ${variantClass} ${sizeClass} ${
         fullWidth ? 'w-full' : ''
       } ${className}`}

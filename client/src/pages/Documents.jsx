@@ -21,6 +21,7 @@ import Badge from '../components/ui/Badge.jsx';
 import Input from '../components/ui/Input.jsx';
 import EmptyState from '../components/ui/EmptyState.jsx';
 import ProgressBar from '../components/ui/ProgressBar.jsx';
+import Modal from '../components/ui/Modal.jsx';
 import { SkeletonDocList } from '../components/ui/Skeleton.jsx';
 
 function formatSize(bytes) {
@@ -443,32 +444,29 @@ export default function Documents() {
       </div>
 
       {/* Safety Confirmation Modal */}
-      {docToDelete && (
-        <div
-          role="dialog"
-          aria-modal="true"
-          aria-labelledby="delete-dialog-title"
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-xs animate-fade-in"
-          onClick={() => {
-            if (!deleting) setDocToDelete(null);
-          }}
-        >
-          <div
-            className="w-full max-w-md rounded-xl border border-border-subtle bg-surface p-6 shadow-xl"
-            onClick={(e) => e.stopPropagation()}
-          >
+      <Modal
+        isOpen={Boolean(docToDelete)}
+        onClose={() => {
+          if (!deleting) setDocToDelete(null);
+        }}
+      >
+        {docToDelete && (
+          <>
             <div className="flex items-start gap-3.5">
               <div className="grid h-10 w-10 shrink-0 place-items-center rounded-lg border border-danger/30 bg-danger-subtle text-danger">
                 <AlertTriangle className="h-5 w-5 stroke-[2]" aria-hidden="true" />
               </div>
               <div className="min-w-0 flex-1">
                 <h3
-                  id="delete-dialog-title"
+                  id="modal-dialog-title"
                   className="text-base font-semibold tracking-tight text-primary"
                 >
                   Delete Document
                 </h3>
-                <p className="mt-1 text-xs text-secondary leading-relaxed">
+                <p
+                  id="modal-dialog-description"
+                  className="mt-1 text-xs text-secondary leading-relaxed"
+                >
                   Are you sure you want to delete{' '}
                   <span className="font-semibold text-primary">
                     &quot;{docToDelete.title || docToDelete.originalName}&quot;
@@ -497,9 +495,9 @@ export default function Documents() {
                 Delete Document
               </Button>
             </div>
-          </div>
-        </div>
-      )}
+          </>
+        )}
+      </Modal>
     </div>
   );
 }

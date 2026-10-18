@@ -96,7 +96,7 @@ export default function QuizPanel({ document: doc, onGenerated }) {
         </>
       }
     >
-      {/* Score summary card — shown after submission */}
+      {/* Score summary card: shown after submission */}
       {submitted ? (
         <Card>
           <div className="flex flex-col items-center gap-4 px-4 py-6 text-center sm:flex-row sm:items-center sm:gap-8 sm:text-left sm:px-6">
@@ -249,7 +249,7 @@ export default function QuizPanel({ document: doc, onGenerated }) {
         );
       })}
 
-      {/* Submit row — sticky at bottom while answering */}
+      {/* Submit row: sticky at bottom while answering */}
       {!submitted && (
         <div className="sticky bottom-4 pt-2">
           <Button fullWidth size="md" onClick={handleSubmit} disabled={!answeredAll}>

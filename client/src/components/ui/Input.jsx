@@ -33,6 +33,9 @@ export default function Input({
           id={id}
           type={effectiveType}
           aria-invalid={error ? true : undefined}
+          aria-describedby={
+            error && id ? `${id}-error` : hint && id ? `${id}-hint` : undefined
+          }
           className={`w-full rounded-md border bg-surface px-3 py-2 text-sm text-primary outline-none transition-colors duration-150 placeholder:text-muted disabled:bg-subtle disabled:text-muted disabled:cursor-not-allowed ${
             leftElement ? 'pl-9' : ''
           } ${
@@ -65,9 +68,9 @@ export default function Input({
         )}
       </div>
       {error ? (
-        <p className="text-xs text-danger">{error}</p>
+        <p id={id ? `${id}-error` : undefined} className="text-xs text-danger">{error}</p>
       ) : (
-        hint && <p className="text-xs text-muted">{hint}</p>
+        hint && <p id={id ? `${id}-hint` : undefined} className="text-xs text-muted">{hint}</p>
       )}
     </div>
   );

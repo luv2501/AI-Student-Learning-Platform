@@ -17,7 +17,7 @@ export function PageLoader({ label = 'Loading...' }) {
   );
 }
 
-/** Shown while the AI is working — sets expectations about the wait. */
+/** Shown while the AI is working: sets expectations about the wait. */
 export function ThinkingState({ label = 'The AI is working on it', hint = 'This usually takes 10-30 seconds' }) {
   return (
     <div className="animate-fade-in flex flex-col items-center justify-center gap-3 px-6 py-16 text-center">

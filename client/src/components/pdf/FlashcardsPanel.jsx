@@ -24,7 +24,7 @@ export default function FlashcardsPanel({ document: doc, onGenerated }) {
   const [index, setIndex] = useState(0);
   const [flipped, setFlipped] = useState(false);
   const [order, setOrder] = useState(null);
-  // Self-marking lives in this session only — no backend change needed.
+  // Self-marking lives in this session only: no backend change needed.
   const [known, setKnown] = useState({});
 
   const deck = useMemo(() => {
@@ -154,7 +154,7 @@ export default function FlashcardsPanel({ document: doc, onGenerated }) {
       {/* Session progress bar */}
       <ProgressBar value={(reviewed / deck.length) * 100} label="Session progress" />
 
-      {/* Card flip area — click or press Space */}
+      {/* Card flip area: click or press Space */}
       <button
         type="button"
         onClick={() => setFlipped((f) => !f)}

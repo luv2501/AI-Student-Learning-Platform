@@ -23,8 +23,17 @@ export function MobileHeader() {
         setDropdownOpen(false);
       }
     }
+    function handleKeyDown(e) {
+      if (e.key === 'Escape') {
+        setDropdownOpen(false);
+      }
+    }
     document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
+    document.addEventListener('keydown', handleKeyDown);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener('keydown', handleKeyDown);
+    };
   }, []);
 
   function handleLogout() {
@@ -53,9 +62,10 @@ export function MobileHeader() {
           <button
             type="button"
             onClick={() => setDropdownOpen((prev) => !prev)}
+            aria-haspopup="menu"
             aria-expanded={dropdownOpen}
             aria-label="User menu"
-            className="grid h-8 w-8 cursor-pointer place-items-center rounded-sm border border-border-subtle bg-subtle font-mono text-xs font-semibold text-primary transition hover:border-primary/40"
+            className="grid h-8 w-8 cursor-pointer place-items-center rounded-sm border border-border-subtle bg-subtle font-mono text-xs font-semibold text-primary transition hover:border-primary/40 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-accent"
           >
             {initials}
           </button>

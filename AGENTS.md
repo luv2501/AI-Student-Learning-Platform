@@ -99,6 +99,12 @@ When making non-trivial architectural, structural, or dependency decisions, docu
 - **Alternatives Considered**: Generic illustration or playful error page (rejected per anti-vibecode: honest, high-utility minimalism preferred).
 - **Impact**: Zero compilation errors on Vite production build; 100% test pass rate across all server test suites.
 
+### [2026-10-19] - Motion, Micro-Interactions, WCAG 2.1 AA Audit & Phase 4 Wrap-up (Task 4.6)
+- **Context**: Task 4.6 requires verifying Framer Motion integration, ensuring restrained motion (duration <= 150ms) with `prefers-reduced-motion` compliance, eliminating `window.confirm` calls, auditing keyboard navigation and ARIA attributes (focus traps, tablists, button states), auditing color contrast ratios (>= 4.5:1), and conducting frontend secrets hygiene.
+- **Decision**: Installed `framer-motion`. Built accessible `Modal.jsx` featuring complete focus trapping, Escape key listener, initial focus assignment, and focus restoration to trigger elements upon closing. Built `MotionTransition.jsx` with `useReducedMotion()` and <= 150ms duration. Replaced the last `window.confirm` in `Dashboard.jsx` with `Modal.jsx`. Refactored `SegmentedTabs.jsx` to follow the W3C WAI-ARIA tablist pattern with arrow-key keyboard navigation and dynamic `tabIndex`. Added `aria-busy` to `Button.jsx`, `aria-expanded` and `aria-haspopup` to navigation headers, and linked `aria-describedby` in `Input.jsx`. Re-calibrated semantic color tokens in `index.css` (`--text-muted`, `--warning`) to guarantee >= 4.5:1 contrast across both Light and Dark themes. Verified zero secrets in frontend code and safe token storage under `filesense_token`.
+- **Alternatives Considered**: Retaining native `window.confirm` for task deletion (rejected due to accessibility and design inconsistency).
+- **Impact**: Zero compilation errors on Vite production build; 132/132 tests passing across all server test suites (`test-api.js`, `test-tasks.js`, `test-documents.js`, `test-ai.js`). Phase 4 UI Redesign is 100% complete.
+
 ---
 
 

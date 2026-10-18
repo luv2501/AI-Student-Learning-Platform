@@ -19,6 +19,8 @@ import Alert from '../components/ui/Alert.jsx';
 import Badge from '../components/ui/Badge.jsx';
 import SegmentedTabs from '../components/ui/SegmentedTabs.jsx';
 import EmptyState from '../components/ui/EmptyState.jsx';
+import Modal from '../components/ui/Modal.jsx';
+import MotionTransition from '../components/ui/MotionTransition.jsx';
 import { SkeletonWorkspace } from '../components/ui/Skeleton.jsx';
 import NotesPanel from '../components/pdf/NotesPanel.jsx';
 import FlashcardsPanel from '../components/pdf/FlashcardsPanel.jsx';
@@ -296,64 +298,56 @@ export default function StudyWorkspace() {
         <div className="min-w-0 space-y-5">
           <SegmentedTabs items={tabItems} value={tab} onChange={setTab} />
 
-          <div key={tab} className="animate-fade-in">
+          <MotionTransition key={tab}>
             <ActivePanel document={doc} onGenerated={handleGenerated} />
-          </div>
+          </MotionTransition>
         </div>
       </div>
 
       {/* Delete Confirmation Modal */}
-      {showDeleteModal && (
-        <div
-          role="dialog"
-          aria-modal="true"
-          aria-labelledby="ws-delete-title"
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-xs animate-fade-in"
-          onClick={() => { if (!deleting) setShowDeleteModal(false); }}
-        >
-          <div
-            className="w-full max-w-md rounded-xl border border-border-subtle bg-surface p-6 shadow-xl"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className="flex items-start gap-3.5">
-              <div className="grid h-10 w-10 shrink-0 place-items-center rounded-lg border border-danger/30 bg-danger-subtle text-danger">
-                <AlertTriangle className="h-5 w-5 stroke-[2]" aria-hidden="true" />
-              </div>
-              <div className="min-w-0 flex-1">
-                <h3 id="ws-delete-title" className="text-base font-semibold tracking-tight text-primary">
-                  Delete Document
-                </h3>
-                <p className="mt-1 text-xs text-secondary leading-relaxed">
-                  Are you sure you want to delete{' '}
-                  <span className="font-semibold text-primary">
-                    &quot;{docTitle.replace(/\.pdf$/i, '')}&quot;
-                  </span>
-                  ? All generated notes, flashcards, and quiz questions will be permanently removed.
-                  This cannot be undone.
-                </p>
-              </div>
-            </div>
-            <div className="mt-6 flex items-center justify-end gap-2.5">
-              <Button
-                variant="secondary"
-                size="sm"
-                onClick={() => setShowDeleteModal(false)}
-                disabled={deleting}
-              >
-                Cancel
-              </Button>
-              <Button
-                variant="danger"
-                size="sm"
-                loading={deleting}
-                onClick={handleConfirmDelete}
-              >
-                Delete Document
-              </Button>
-            </div>
+      <Modal
+        isOpen={showDeleteModal}
+        onClose={() => {
+          if (!deleting) setShowDeleteModal(false);
+        }}
+      >
+        <div className="flex items-start gap-3.5">
+          <div className="grid h-10 w-10 shrink-0 place-items-center rounded-lg border border-danger/30 bg-danger-subtle text-danger">
+            <AlertTriangle className="h-5 w-5 stroke-[2]" aria-hidden="true" />
+          </div>
+          <div className="min-w-0 flex-1">
+            <h3 id="modal-dialog-title" className="text-base font-semibold tracking-tight text-primary">
+              Delete Document
+            </h3>
+            <p id="modal-dialog-description" className="mt-1 text-xs text-secondary leading-relaxed">
+              Are you sure you want to delete{' '}
+              <span className="font-semibold text-primary">
+                &quot;{docTitle.replace(/\.pdf$/i, '')}&quot;
+              </span>
+              ? All generated notes, flashcards, and quiz questions will be permanently removed.
+              This cannot be undone.
+            </p>
           </div>
         </div>
-      )}
+        <div className="mt-6 flex items-center justify-end gap-2.5">
+          <Button
+            variant="secondary"
+            size="sm"
+            onClick={() => setShowDeleteModal(false)}
+            disabled={deleting}
+          >
+            Cancel
+          </Button>
+          <Button
+            variant="danger"
+            size="sm"
+            loading={deleting}
+            onClick={handleConfirmDelete}
+          >
+            Delete Document
+          </Button>
+        </div>
+      </Modal>
     </div>
   );
 }

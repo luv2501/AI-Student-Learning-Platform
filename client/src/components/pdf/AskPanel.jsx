@@ -85,14 +85,14 @@ export default function AskPanel({ document: doc }) {
           ) : (
             thread.map((entry, i) => (
               <div key={i} className="animate-rise space-y-3">
-                {/* User message — right-aligned */}
+                {/* User message: right-aligned */}
                 <div className="flex justify-end" aria-label="Your question">
                   <p className="max-w-[85%] rounded-xl rounded-br-sm bg-accent px-4 py-2.5 text-sm leading-relaxed text-accent-contrast shadow-xs">
                     {entry.question}
                   </p>
                 </div>
 
-                {/* AI answer — left-aligned */}
+                {/* AI answer: left-aligned */}
                 <div className="flex items-start gap-2.5" aria-label="AI answer">
                   {/* AI avatar chip */}
                   <div

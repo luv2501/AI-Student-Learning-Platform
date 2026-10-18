@@ -22,7 +22,7 @@ export default function ThemeToggle({ className = '', variant = 'button' }) {
           onClick={() => setTheme('light')}
           aria-label="Light theme"
           aria-pressed={theme === 'light'}
-          className={`cursor-pointer rounded-sm p-1.5 transition-colors ${
+          className={`cursor-pointer rounded-sm p-1.5 transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-accent ${
             theme === 'light'
               ? 'bg-surface text-primary shadow-xs'
               : 'text-muted hover:text-primary'
@@ -35,7 +35,7 @@ export default function ThemeToggle({ className = '', variant = 'button' }) {
           onClick={() => setTheme('dark')}
           aria-label="Dark theme"
           aria-pressed={theme === 'dark'}
-          className={`cursor-pointer rounded-sm p-1.5 transition-colors ${
+          className={`cursor-pointer rounded-sm p-1.5 transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-accent ${
             theme === 'dark'
               ? 'bg-surface text-primary shadow-xs'
               : 'text-muted hover:text-primary'
@@ -48,7 +48,7 @@ export default function ThemeToggle({ className = '', variant = 'button' }) {
           onClick={() => setTheme('system')}
           aria-label="System theme"
           aria-pressed={theme === 'system'}
-          className={`cursor-pointer rounded-sm p-1.5 transition-colors ${
+          className={`cursor-pointer rounded-sm p-1.5 transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-accent ${
             theme === 'system'
               ? 'bg-surface text-primary shadow-xs'
               : 'text-muted hover:text-primary'

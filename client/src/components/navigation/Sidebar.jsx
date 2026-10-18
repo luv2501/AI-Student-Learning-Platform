@@ -77,6 +77,7 @@ export default function Sidebar({ collapsed, onToggle }) {
         <button
           type="button"
           onClick={onToggle}
+          aria-expanded={!collapsed}
           aria-label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
           className="cursor-pointer rounded-md p-1.5 text-muted transition-colors hover:bg-subtle hover:text-primary focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-accent"
         >
@@ -89,7 +90,7 @@ export default function Sidebar({ collapsed, onToggle }) {
       </div>
 
       {/* Navigation Items */}
-      <nav className="flex-1 space-y-1.5 p-3 overflow-y-auto sm-scroll">
+      <nav aria-label="Main navigation" className="flex-1 space-y-1.5 p-3 overflow-y-auto sm-scroll">
         {navItems.map((item) => {
           const Icon = item.icon;
 

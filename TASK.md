@@ -134,9 +134,19 @@
   - [x] Accessible form controls using refactored `Input`, `Button`, and `Alert` components.
   - [x] Password visibility toggle with Lucide `Eye` and `EyeOff` icons.
   - [x] High-contrast primary submit button with loading spinner state.
-- [ ] Frontend Security Audit:
-  - [ ] Verify zero backend secrets (`AI_API_KEY`, `JWT_SECRET`, `MONGO_URI`) exist in client code.
-  - [ ] Verify safe token storage under `filesense_token`.
-- [ ] Final Verification:
-  - [ ] Run `npm run build` in `client/` (0 errors).
-  - [ ] Run all server test scripts (`test-api.js`, `test-tasks.js`, `test-documents.js`, `test-ai.js`) -> 100% pass rate.
+- [x] Micro-Interactions & Restrained Motion (`framer-motion`):
+  - [x] Verified `framer-motion` installation in `client/package.json`.
+  - [x] Subtle restrained transitions on panel and route transitions (duration <= 150ms).
+  - [x] Created `MotionTransition.jsx` and `Modal.jsx` respecting `@media (prefers-reduced-motion: reduce)` and `useReducedMotion()`.
+  - [x] Disciplined card hover states without aggressive scaling.
+- [x] WCAG 2.1 AA Accessibility Audit:
+  - [x] Replaced `window.confirm` with accessible `Modal.jsx` dialogs featuring focus trapping, Escape dismissal, and focus restoration.
+  - [x] Upgraded `SegmentedTabs.jsx` with full WAI-ARIA tablist pattern: keyboard arrow navigation (`ArrowLeft`/`ArrowRight`/`Home`/`End`) and dynamic `tabIndex`.
+  - [x] Audited buttons and interactive controls: added `aria-busy` to loading buttons, `aria-expanded` and `aria-haspopup` to navigation menus.
+  - [x] Audited and calibrated color tokens in `index.css`: `--text-muted` and `--warning` guarantee >= 4.5:1 contrast across Light and Dark themes.
+- [x] Frontend Security Audit:
+  - [x] Verified zero backend secrets (`AI_API_KEY`, `JWT_SECRET`, `MONGO_URI`) exist in client code.
+  - [x] Verified safe token storage under `filesense_token`.
+- [x] Final Verification:
+  - [x] Run `npm run build` in `client/` (0 errors).
+  - [x] Run all server test scripts (`test-api.js`, `test-tasks.js`, `test-documents.js`, `test-ai.js`) -> 100% pass rate (132/132 tests passed).
