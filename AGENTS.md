@@ -105,6 +105,18 @@ When making non-trivial architectural, structural, or dependency decisions, docu
 - **Alternatives Considered**: Retaining native `window.confirm` for task deletion (rejected due to accessibility and design inconsistency).
 - **Impact**: Zero compilation errors on Vite production build; 132/132 tests passing across all server test suites (`test-api.js`, `test-tasks.js`, `test-documents.js`, `test-ai.js`). Phase 4 UI Redesign is 100% complete.
 
+### [2026-10-23] - Citations & Saved Ask History (Task 5.1)
+- **Context**: Task 5.1 requires extracting and persisting PDF text per page, returning ground-truth citations (`{ pageNumber, passage }`) with AI answers, persisting Q&A message exchanges to MongoDB (`AskHistory`), allowing users to browse saved history and clear it with accessible confirmation, and maintaining 100% backward compatibility for legacy documents.
+- **Decision**: 
+  - Updated `pdfService.js` to extract text per page (`pages: [{ pageNumber, text }]`) using `pdf-parse`.
+  - Updated `Document.js` schema with `pages` array (`select: false` to prevent leaking raw text in queries) and backward-compatible `getDocPages()` fallback.
+  - Created `AskHistory.js` model with compound index `{ userId: 1, documentId: 1 }` storing user/assistant message pairs and citation objects.
+  - Updated `aiService.js` `answerQuestion` to group document text by pages, prompt the LLM for JSON with structured citations, and filter valid `{ pageNumber, passage }` entries.
+  - Implemented `POST /api/documents/:id/ask` (alias `/api/ai/ask/:id`), `GET .../ask/history`, and `DELETE .../ask/history`. Added cascade cleanup of `AskHistory` on document deletion.
+  - Redesigned `AskPanel.jsx` in accordance with `DESIGN.md`: loads conversation history on mount, displays Geist Mono citation chips (`Page 1`, `Page 2`) with `FileText` icons, toggles accessible inline excerpt callouts with supporting passages, and adds a "Clear history" action using `Modal.jsx` and Sonner toasts.
+- **Alternatives Considered**: In-memory session chat storage (rejected because student study context should persist across page reloads and browser sessions). Full-screen modal popups for citations (rejected in favor of compact inline excerpt callouts preserving reading flow).
+- **Impact**: Zero regressions — all 5 test suites pass 100% (`test-api.js` 27/27, `test-tasks.js` 42/42, `test-documents.js` 40/40, `test-ai.js` 23/23, `test-citations.js` 40/40); Vite production build exits `0`.
+
 ---
 
 

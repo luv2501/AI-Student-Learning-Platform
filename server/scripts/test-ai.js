@@ -6,7 +6,11 @@
  * PDF upload/extraction is covered separately by test:documents — this seeds a
  * document directly so the run stays focused on the AI path.
  */
-import 'dotenv/config';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
+import dotenv from 'dotenv';
+dotenv.config();
+dotenv.config({ path: fileURLToPath(new URL('../.env', import.meta.url)) });
 import { MongoMemoryServer } from 'mongodb-memory-server';
 import mongoose from 'mongoose';
 

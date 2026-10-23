@@ -15,6 +15,14 @@ const quizQuestionSchema = new mongoose.Schema(
   { _id: false }
 );
 
+const pageSchema = new mongoose.Schema(
+  {
+    pageNumber: { type: Number, required: true },
+    text: { type: String, default: '' },
+  },
+  { _id: false }
+);
+
 const documentSchema = new mongoose.Schema(
   {
     user: {
@@ -29,8 +37,9 @@ const documentSchema = new mongoose.Schema(
     size: { type: Number, default: 0 },
     pageCount: { type: Number, default: 0 },
 
-    // Large field: excluded from queries unless asked for with .select('+extractedText')
+    // Large fields: excluded from queries unless asked for with .select('+extractedText +pages')
     extractedText: { type: String, default: '', select: false },
+    pages: { type: [pageSchema], default: [], select: false },
     textLength: { type: Number, default: 0 },
     isTruncated: { type: Boolean, default: false },
 
@@ -86,13 +95,34 @@ export function formatPublicDocument(doc, { lightweight = false } = {}) {
   };
 }
 
+/** Returns pages array with backward compatibility fallback to extractedText if pages is empty. */
+export function getDocPages(doc) {
+  if (!doc) return [];
+  if (Array.isArray(doc.pages) && doc.pages.length > 0) {
+    return doc.pages;
+  }
+  const text = doc.extractedText || '';
+  if (text.length > 0) {
+    return [{ pageNumber: 1, text }];
+  }
+  return [];
+}
+
 /** Everything except the bulky extracted text, with standardized presence flags. */
 documentSchema.methods.toPublic = function toPublic(options = {}) {
   return formatPublicDocument(this, options);
 };
 
+documentSchema.methods.getPages = function getPages() {
+  return getDocPages(this);
+};
+
 documentSchema.statics.toPublic = function toPublic(doc, options = {}) {
   return formatPublicDocument(doc, options);
+};
+
+documentSchema.statics.getPages = function getPages(doc) {
+  return getDocPages(doc);
 };
 
 export default mongoose.model('Document', documentSchema);

@@ -150,3 +150,32 @@
 - [x] Final Verification:
   - [x] Run `npm run build` in `client/` (0 errors).
   - [x] Run all server test scripts (`test-api.js`, `test-tasks.js`, `test-documents.js`, `test-ai.js`) -> 100% pass rate (132/132 tests passed).
+
+---
+
+## Phase 5: Advanced Intelligence & History
+
+### Task 5.1: Citations and Saved Ask History
+- [x] PDF Page Extraction & Document Model:
+  - [x] Updated `pdfService.js` to extract text per page (`pages: [{ pageNumber, text }]`) using `pdf-parse`.
+  - [x] Updated `Document` model with `pages` schema (`select: false` to avoid leaking raw text).
+  - [x] Maintained 100% backward compatibility for existing documents via `getDocPages(doc)` fallback.
+- [x] Ask History Model & Persistence:
+  - [x] Created `server/src/models/AskHistory.js` with `userId`, `documentId`, `messages` array, and compound index `{ userId: 1, documentId: 1 }`.
+  - [x] Re-exported model from `server/models/AskHistory.js`.
+  - [x] Updated `aiService.js` `answerQuestion`: groups document text by pages, requests JSON schema with ground-truth citations, extracts `pageNumber` and `passage`.
+  - [x] Persisted user questions and assistant responses with citations into `AskHistory` on every ask.
+  - [x] Implemented `GET /api/documents/:id/ask/history` and `GET /api/ai/ask/:id/history` to return conversation history.
+  - [x] Implemented `DELETE /api/documents/:id/ask/history` and `DELETE /api/ai/ask/:id/history` to clear history.
+  - [x] Cascade delete: deleting a document removes its associated `AskHistory`.
+- [x] Frontend Citations & Ask History UI (`AskPanel.jsx`):
+  - [x] Fetches conversation history on mount via `api.get('/ai/ask/${doc._id}/history')`.
+  - [x] Renders clickable citation chips in Geist Mono (`Page 1`, `Page 2`) with `FileText` icon.
+  - [x] Clicking a citation displays an accessible expandable callout with the supporting passage and close button.
+  - [x] Added "Clear history" button with Lucide `RotateCcw` in header.
+  - [x] Wired accessible confirmation dialog using `Modal.jsx` and Sonner toast feedback.
+- [x] Verification & Tests:
+  - [x] Created `server/scripts/test-citations.js` (40/40 tests passing).
+  - [x] Verified `npm --prefix client run build` (0 errors).
+  - [x] Verified all server test suites: `test-api.js` (27/27), `test-tasks.js` (42/42), `test-documents.js` (40/40), `test-ai.js` (23/23), `test-citations.js` (40/40).
+

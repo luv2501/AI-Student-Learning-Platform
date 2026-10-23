@@ -439,24 +439,127 @@ ${context}`,
   return questions;
 }
 
-/** Answers a student question using only the document text. */
-export async function answerQuestion(text, question) {
-  const chunks = chunkText(text);
-  const context =
-    chunks.length <= 1
-      ? chunks[0] || text
-      : rankChunksByQuery(chunks, question, 3).join('\n\n---\n\n');
+/**
+ * Ranks pages based on keyword overlap with the student's question,
+ * returning the most relevant pages within character budget.
+ */
+export function rankPagesByQuery(pages, query, maxChars = 12000, topK = 5) {
+  if (!Array.isArray(pages) || pages.length === 0) return [];
+  if (pages.length === 1) return pages;
 
-  const answer = await askAI({
+  const totalLength = pages.reduce((sum, p) => sum + (p.text?.length || 0), 0);
+  if (totalLength <= maxChars && pages.length <= topK) return pages;
+
+  const keywords = (String(query || '').toLowerCase().match(/\b[a-z0-9_-]{2,}\b/g) || [])
+    .filter((w) => !STOP_WORDS.has(w));
+
+  const scored = pages.map((page, index) => {
+    const lower = (page.text || '').toLowerCase();
+    let score = 0;
+    for (const kw of keywords) {
+      let count = 0;
+      let pos = 0;
+      while ((pos = lower.indexOf(kw, pos)) !== -1) {
+        count++;
+        pos += kw.length;
+      }
+      score += count;
+    }
+    return { page, score, index };
+  });
+
+  scored.sort((a, b) => b.score - a.score || a.index - b.index);
+
+  const selected = [];
+  let accumulated = 0;
+  for (const item of scored) {
+    if (selected.length >= topK) break;
+    if (accumulated > 0 && accumulated + (item.page.text?.length || 0) > maxChars) break;
+    selected.push(item.page);
+    accumulated += item.page.text?.length || 0;
+  }
+
+  selected.sort((a, b) => a.pageNumber - b.pageNumber);
+  return selected;
+}
+
+/**
+ * Answers a student question grounded strictly in the document pages,
+ * returning the answer and verifiable citations [{ pageNumber, passage }].
+ */
+export async function answerQuestion(documentOrText, question, options = {}) {
+  let pages = [];
+
+  if (Array.isArray(documentOrText)) {
+    pages = documentOrText;
+  } else if (documentOrText && typeof documentOrText === 'object') {
+    if (Array.isArray(documentOrText.pages) && documentOrText.pages.length > 0) {
+      pages = documentOrText.pages;
+    } else {
+      const text = documentOrText.extractedText || documentOrText.text || '';
+      pages = [{ pageNumber: 1, text }];
+    }
+  } else if (typeof documentOrText === 'string') {
+    if (Array.isArray(options?.pages) && options.pages.length > 0) {
+      pages = options.pages;
+    } else {
+      pages = [{ pageNumber: 1, text: documentOrText }];
+    }
+  }
+
+  const selectedPages = rankPagesByQuery(pages, question, 12000);
+
+  const pagesContext = selectedPages
+    .map((p) => `--- PAGE ${p.pageNumber} ---\n${p.text}`)
+    .join('\n\n');
+
+  const raw = await askAI({
+    json: true,
     maxTokens: 2000,
-    system:
-      'You answer student questions using only the document provided. If the answer is not in the document, say so plainly instead of guessing. Answer in clear plain text, at most 200 words. Do not use markdown.',
-    prompt: `DOCUMENT:
-${context}
+    system: `You are an academic study assistant that answers questions grounded strictly in the provided document. ${JSON_ONLY}
+Return this exact JSON format:
+{
+  "answer": "Clear, direct answer explaining the concept. Plain text only, no markdown.",
+  "citations": [
+    {
+      "pageNumber": 1,
+      "passage": "Exact supporting sentence or excerpt from the page"
+    }
+  ]
+}
+
+Rules:
+- If the answer cannot be found in the provided document, state clearly: "This document does not contain information to answer that question." and return an empty citations array: "citations": [].
+- Each citation must have an integer pageNumber matching the page where the passage appears, and a concise passage quoting the text.
+- Keep the answer under 200 words. Plain text only.`,
+    prompt: `DOCUMENT (BY PAGE):
+${pagesContext}
 
 STUDENT QUESTION: ${question}`,
   });
 
-  if (!answer) throw apiError(502, 'The AI returned an empty answer. Please try again.');
-  return answer;
+  let answer = '';
+  let citations = [];
+
+  try {
+    const parsed = parseJson(raw, 'answer and citations');
+    answer = String(parsed.answer || '').trim();
+    if (Array.isArray(parsed.citations)) {
+      citations = parsed.citations
+        .map((c) => ({
+          pageNumber: Number(c.pageNumber || c.page),
+          passage: String(c.passage || c.quote || c.text || '').trim(),
+        }))
+        .filter((c) => Number.isInteger(c.pageNumber) && c.pageNumber > 0 && c.passage.length > 0);
+    }
+  } catch {
+    answer = String(raw || '').trim();
+    citations = [];
+  }
+
+  if (!answer) {
+    throw apiError(502, 'The AI returned an empty answer. Please try again.');
+  }
+
+  return { answer, citations };
 }

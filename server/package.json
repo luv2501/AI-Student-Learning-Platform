@@ -12,6 +12,7 @@
     "test:tasks": "node scripts/test-tasks.js",
     "test:documents": "node scripts/test-documents.js",
     "test:ai": "node scripts/test-ai.js",
+    "test:citations": "node scripts/test-citations.js",
     "check:db": "node scripts/check-db.js",
     "check:ai": "node scripts/check-ai.js"
   },

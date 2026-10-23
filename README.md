@@ -67,8 +67,9 @@ The AI layer is provider-agnostic and interfaces with standard OpenAI-compatible
 | DELETE | /api/documents/:id | yes  | Delete PDF + file on disk      |
 | POST   | /api/documents/:id/notes | yes | AI study notes (`?refresh=true` to regenerate) |
 | POST   | /api/documents/:id/flashcards | yes | AI flashcards           |
-| POST   | /api/documents/:id/quiz | yes | AI multiple choice quiz      |
-| POST   | /api/documents/:id/ask  | yes | Ask a question about the PDF |
+| POST   | /api/documents/:id/ask  | yes | Ask question about PDF with page citations (alias: `/api/ai/ask/:id`) |
+| GET    | /api/documents/:id/ask/history | yes | Get stored conversation history (alias: `/api/ai/ask/:id/history`) |
+| DELETE | /api/documents/:id/ask/history | yes | Clear conversation history (alias: `/api/ai/ask/:id/history`) |
 
 ## Setup
 

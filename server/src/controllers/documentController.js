@@ -1,5 +1,6 @@
 import fs from 'node:fs/promises';
 import Document from '../models/Document.js';
+import AskHistory from '../models/AskHistory.js';
 import apiError from '../utils/apiError.js';
 import { extractPdfText } from '../services/pdfService.js';
 import {
@@ -12,7 +13,7 @@ import {
 /** Loads a document that belongs to the logged in user, or 404s. */
 async function findOwned(req, { withText = false } = {}) {
   const query = Document.findOne({ _id: req.params.id, user: req.user._id });
-  if (withText) query.select('+extractedText');
+  if (withText) query.select('+extractedText +pages');
 
   const doc = await query;
   if (!doc) throw apiError(404, 'Document not found');
@@ -68,6 +69,7 @@ export async function uploadDocument(req, res) {
     size: req.file.size,
     pageCount: extracted.pageCount,
     extractedText: extracted.text,
+    pages: extracted.pages || [],
     textLength: extracted.text.length,
     isTruncated: Boolean(extracted.isTruncated),
   });
@@ -100,6 +102,7 @@ export async function deleteDocument(req, res) {
   if (!doc) throw apiError(404, 'Document not found');
 
   await removeFile(doc.filePath);
+  await AskHistory.deleteOne({ documentId: doc._id });
   res.json({ message: 'Document deleted', id: doc._id });
 }
 
@@ -127,7 +130,7 @@ export const createNotes = makeGenerator('notes', generateNotes, (v) => !v);
 export const createFlashcards = makeGenerator('flashcards', generateFlashcards, (v) => !v?.length);
 export const createQuiz = makeGenerator('quiz', generateQuiz, (v) => !v?.length);
 
-/** POST /api/documents/:id/ask */
+/** POST /api/documents/:id/ask or /api/ai/ask/:id */
 export async function askDocument(req, res) {
   const question = String(req.body?.question || '').trim();
 
@@ -135,7 +138,56 @@ export async function askDocument(req, res) {
   if (question.length > 500) throw apiError(400, 'Question is too long (500 characters max)');
 
   const doc = await findOwned(req, { withText: true });
-  const answer = await answerQuestion(doc.extractedText, question);
+  const { answer, citations } = await answerQuestion(doc, question);
 
-  res.json({ question, answer });
+  // Persist conversation exchange to AskHistory
+  const userMsg = {
+    role: 'user',
+    content: question,
+    createdAt: new Date(),
+  };
+
+  const assistantMsg = {
+    role: 'assistant',
+    content: answer,
+    citations: citations || [],
+    createdAt: new Date(),
+  };
+
+  await AskHistory.findOneAndUpdate(
+    { userId: req.user._id, documentId: doc._id },
+    {
+      $push: { messages: { $each: [userMsg, assistantMsg] } },
+    },
+    { upsert: true, returnDocument: 'after', setDefaultsOnInsert: true }
+  );
+
+  res.json({ question, answer, citations: citations || [] });
+}
+
+/** GET /api/documents/:id/ask/history or /api/ai/ask/:id/history */
+export async function getAskHistory(req, res) {
+  const doc = await findOwned(req);
+  const historyDoc = await AskHistory.findOne({
+    userId: req.user._id,
+    documentId: doc._id,
+  }).lean();
+
+  res.json({
+    history: historyDoc?.messages || [],
+  });
+}
+
+/** DELETE /api/documents/:id/ask/history or /api/ai/ask/:id/history */
+export async function clearAskHistory(req, res) {
+  const doc = await findOwned(req);
+  await AskHistory.deleteOne({
+    userId: req.user._id,
+    documentId: doc._id,
+  });
+
+  res.json({
+    message: 'Ask history cleared',
+    documentId: doc._id,
+  });
 }

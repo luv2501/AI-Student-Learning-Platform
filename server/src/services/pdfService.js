@@ -26,10 +26,32 @@ export async function extractPdfText(buffer) {
 
     const isTruncated = text.length >= MAX_TEXT_CHARS;
 
+    const rawPages = Array.isArray(result?.pages) ? result.pages : [];
+    let accumulatedLength = 0;
+    const pages = rawPages
+      .map((p, idx) => {
+        const pageText = tidy(p?.text);
+        accumulatedLength += pageText.length;
+        return {
+          pageNumber: Number(p?.num || idx + 1),
+          text: pageText,
+        };
+      })
+      .filter((p) => p.text.length > 0);
+
+    // Fallback if pages array was empty but document text was present
+    if (pages.length === 0 && text.length > 0) {
+      pages.push({
+        pageNumber: 1,
+        text: text.slice(0, MAX_TEXT_CHARS),
+      });
+    }
+
     return {
       text: text.slice(0, MAX_TEXT_CHARS),
-      pageCount: result?.total ?? result?.numpages ?? result?.pages?.length ?? 0,
+      pageCount: result?.total ?? result?.numpages ?? pages.length ?? 0,
       isTruncated,
+      pages,
     };
   } catch {
     throw apiError(
