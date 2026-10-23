@@ -13,6 +13,7 @@
     "test:documents": "node scripts/test-documents.js",
     "test:ai": "node scripts/test-ai.js",
     "test:citations": "node scripts/test-citations.js",
+    "test:sm2": "node scripts/test-spaced-repetition.js",
     "check:db": "node scripts/check-db.js",
     "check:ai": "node scripts/check-ai.js"
   },

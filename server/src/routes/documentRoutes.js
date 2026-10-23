@@ -14,6 +14,7 @@ import {
   getAskHistory,
   clearAskHistory,
 } from '../controllers/documentController.js';
+import { getDocumentCardReviews } from '../controllers/flashcardController.js';
 
 const router = Router();
 
@@ -25,6 +26,7 @@ router.route('/:id').get(getDocument).delete(deleteDocument);
 
 router.post('/:id/notes', aiLimiter, createNotes);
 router.post('/:id/flashcards', aiLimiter, createFlashcards);
+router.get('/:id/flashcards/reviews', getDocumentCardReviews);
 router.post('/:id/quiz', aiLimiter, createQuiz);
 router.post('/:id/ask', aiLimiter, askDocument);
 router.get('/:id/ask/history', getAskHistory);

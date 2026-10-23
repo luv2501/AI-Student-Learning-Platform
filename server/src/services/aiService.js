@@ -1,4 +1,5 @@
 import apiError from '../utils/apiError.js';
+import { computeCardId } from '../utils/cardId.js';
 
 const MODEL_FALLBACK = 'openai/gpt-oss-20b';
 const DEFAULT_BASE_URL = 'https://api.groq.com/openai/v1';
@@ -345,18 +346,30 @@ ${contentToSynthesize}`,
 
   const data = parseJson(raw, 'notes');
 
+  const keyPoints = (Array.isArray(data.keyPoints) ? data.keyPoints : [])
+    .map((p) => String(p).trim())
+    .filter(Boolean);
+
+  const sections = (Array.isArray(data.sections) ? data.sections : [])
+    .map((s) => ({
+      heading: String(s?.heading || '').trim(),
+      points: (Array.isArray(s?.points) ? s.points : []).map((p) => String(p).trim()).filter(Boolean),
+    }))
+    .filter((s) => s.heading && s.points.length);
+
+  if (sections.length === 0 && keyPoints.length > 0) {
+    sections.push({
+      heading: 'Core Concepts',
+      points: keyPoints.slice(0, 5),
+    });
+  }
+
   return {
     summary: String(data.summary || '').trim(),
-    keyPoints: (Array.isArray(data.keyPoints) ? data.keyPoints : [])
-      .map((p) => String(p).trim())
-      .filter(Boolean),
-    sections: (Array.isArray(data.sections) ? data.sections : [])
-      .map((s) => ({
-        heading: String(s?.heading || '').trim(),
-        points: (Array.isArray(s?.points) ? s.points : []).map((p) => String(p).trim()).filter(Boolean),
-      }))
-      .filter((s) => s.heading && s.points.length),
+    keyPoints,
+    sections,
   };
+
 }
 
 /** Flashcards: [{ question, answer }] */
@@ -384,10 +397,15 @@ ${context}`,
   const list = firstArray(data);
 
   const cards = (Array.isArray(list) ? list : [])
-    .map((c) => ({
-      question: String(c?.question || '').trim(),
-      answer: String(c?.answer || '').trim(),
-    }))
+    .map((c) => {
+      const question = String(c?.question || '').trim();
+      const answer = String(c?.answer || '').trim();
+      return {
+        cardId: computeCardId(question),
+        question,
+        answer,
+      };
+    })
     .filter((c) => c.question && c.answer);
 
   if (!cards.length) throw apiError(502, 'The AI did not return any usable flashcards. Please try again.');

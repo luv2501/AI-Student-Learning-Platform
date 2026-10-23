@@ -1,6 +1,7 @@
 import fs from 'node:fs/promises';
 import Document from '../models/Document.js';
 import AskHistory from '../models/AskHistory.js';
+import CardReview from '../models/CardReview.js';
 import apiError from '../utils/apiError.js';
 import { extractPdfText } from '../services/pdfService.js';
 import {
@@ -103,6 +104,7 @@ export async function deleteDocument(req, res) {
 
   await removeFile(doc.filePath);
   await AskHistory.deleteOne({ documentId: doc._id });
+  await CardReview.deleteMany({ documentId: doc._id });
   res.json({ message: 'Document deleted', id: doc._id });
 }
 

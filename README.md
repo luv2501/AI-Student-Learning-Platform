@@ -67,6 +67,10 @@ The AI layer is provider-agnostic and interfaces with standard OpenAI-compatible
 | DELETE | /api/documents/:id | yes  | Delete PDF + file on disk      |
 | POST   | /api/documents/:id/notes | yes | AI study notes (`?refresh=true` to regenerate) |
 | POST   | /api/documents/:id/flashcards | yes | AI flashcards           |
+| GET    | /api/documents/:id/flashcards/reviews | yes | Get user review state for document flashcards |
+| POST   | /api/flashcards/review | yes | Submit SM-2 recall rating (1: Again, 2: Hard, 3: Good, 4: Easy) |
+| GET    | /api/flashcards/due    | yes | List all due flashcards across user documents |
+| GET    | /api/flashcards/due-count | yes | Count of flashcards due today for current user |
 | POST   | /api/documents/:id/ask  | yes | Ask question about PDF with page citations (alias: `/api/ai/ask/:id`) |
 | GET    | /api/documents/:id/ask/history | yes | Get stored conversation history (alias: `/api/ai/ask/:id/history`) |
 | DELETE | /api/documents/:id/ask/history | yes | Clear conversation history (alias: `/api/ai/ask/:id/history`) |
@@ -101,8 +105,11 @@ Open http://localhost:5173. The landing page shows API and database status.
 npm --prefix server run test:api        # auth + profile
 npm --prefix server run test:tasks      # tasks CRUD + ownership
 npm --prefix server run test:documents  # PDF upload, extraction, ownership
-npm --prefix server run test:ai         # AI service & prompt formatting (mocked)
+npm --prefix server run test:ai         # AI service & prompt formatting
+npm --prefix server run test:citations  # Citations & ask history persistence
+npm --prefix server run test:sm2        # Spaced repetition (SM-2) engine
 npm --prefix server run check:db        # redacted MongoDB connection check
 ```
-All tests boot an in-memory MongoDB — no Atlas or external AI connection needed.
+All tests boot an in-memory MongoDB; no Atlas or external AI connection needed.
+
 

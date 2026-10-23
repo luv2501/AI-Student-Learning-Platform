@@ -28,6 +28,7 @@ import MotionTransition from '../components/ui/MotionTransition.jsx';
 import { SkeletonTaskList, SkeletonDocList } from '../components/ui/Skeleton.jsx';
 import TaskForm from '../components/tasks/TaskForm.jsx';
 import TaskItem from '../components/tasks/TaskItem.jsx';
+import DueReviewModal from '../components/flashcards/DueReviewModal.jsx';
 
 function greeting() {
   const hour = new Date().getHours();
@@ -63,6 +64,8 @@ export default function Dashboard() {
   const [tasks, setTasks] = useState([]);
   const [documents, setDocuments] = useState([]);
   const [stats, setStats] = useState(null);
+  const [dueFlashcardsCount, setDueFlashcardsCount] = useState(0);
+  const [showDueModal, setShowDueModal] = useState(false);
   const [filter, setFilter] = useState('all');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -72,17 +75,20 @@ export default function Dashboard() {
   const [busyId, setBusyId] = useState('');
   const [taskToDelete, setTaskToDelete] = useState(null);
 
+
   const load = useCallback(async () => {
     setError('');
     try {
-      const [taskRes, statsRes, docRes] = await Promise.all([
+      const [taskRes, statsRes, docRes, dueRes] = await Promise.all([
         api.get('/tasks'),
         api.get('/tasks/stats'),
         api.get('/documents'),
+        api.get('/flashcards/due-count').catch(() => ({ data: { dueCount: 0 } })),
       ]);
       setTasks(taskRes.data.tasks);
       setStats(statsRes.data.stats);
       setDocuments(docRes.data.documents);
+      setDueFlashcardsCount(dueRes.data?.dueCount ?? 0);
     } catch (err) {
       const msg = apiErrorMessage(err);
       setError(msg);
@@ -226,6 +232,20 @@ export default function Dashboard() {
         </div>
 
         <div className="flex flex-wrap items-center gap-2.5">
+          {dueFlashcardsCount > 0 && (
+            <Button
+              onClick={() => setShowDueModal(true)}
+              variant="secondary"
+              size="sm"
+              className="gap-1.5"
+            >
+              <Layers className="h-4 w-4" aria-hidden="true" />
+              <span>Review Due</span>
+              <span className="rounded-sm bg-danger-subtle px-1.5 py-0.5 font-mono text-[10px] font-semibold text-danger border border-danger/30">
+                {dueFlashcardsCount}
+              </span>
+            </Button>
+          )}
           <Link to="/documents">
             <Button variant="primary" size="sm" className="gap-1.5">
               <UploadCloud className="h-4 w-4" aria-hidden="true" />
@@ -243,6 +263,44 @@ export default function Dashboard() {
         <Alert type="danger" onDismiss={() => setError('')}>
           {error}
         </Alert>
+      )}
+
+      {/* Spaced Repetition Due Action Banner */}
+      {dueFlashcardsCount > 0 && (
+        <Card className="border-accent/30 bg-accent-subtle/15 p-4 transition-all">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex items-start gap-3">
+              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-accent/25 bg-accent-subtle text-accent">
+                <Layers className="h-4.5 w-4.5 stroke-[2]" aria-hidden="true" />
+              </div>
+              <div>
+                <div className="flex items-center gap-2">
+                  <h2 className="text-sm font-semibold tracking-tight text-primary">
+                    Flashcards Due for Review
+                  </h2>
+                  <Badge tone="rose" className="font-mono text-[11px]">
+                    {dueFlashcardsCount} due today
+                  </Badge>
+                </div>
+                <p className="mt-0.5 text-xs text-secondary leading-relaxed">
+                  You have concepts scheduled for active recall practice based on the SM-2 algorithm.
+                </p>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-2 self-start sm:self-center">
+              <Button
+                variant="primary"
+                size="sm"
+                onClick={() => setShowDueModal(true)}
+                className="gap-1.5 shadow-xs"
+              >
+                <Layers className="h-3.5 w-3.5" aria-hidden="true" />
+                <span>Start review session</span>
+              </Button>
+            </div>
+          </div>
+        </Card>
       )}
 
       {/* Authentic Metric Cards */}
@@ -557,6 +615,13 @@ export default function Dashboard() {
           </>
         )}
       </Modal>
+
+      {/* Due Flashcards Review Modal */}
+      <DueReviewModal
+        isOpen={showDueModal}
+        onClose={() => setShowDueModal(false)}
+        onSessionFinished={load}
+      />
     </div>
   );
 }

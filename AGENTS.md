@@ -117,7 +117,20 @@ When making non-trivial architectural, structural, or dependency decisions, docu
 - **Alternatives Considered**: In-memory session chat storage (rejected because student study context should persist across page reloads and browser sessions). Full-screen modal popups for citations (rejected in favor of compact inline excerpt callouts preserving reading flow).
 - **Impact**: Zero regressions — all 5 test suites pass 100% (`test-api.js` 27/27, `test-tasks.js` 42/42, `test-documents.js` 40/40, `test-ai.js` 23/23, `test-citations.js` 40/40); Vite production build exits `0`.
 
+### [2026-10-24] - Spaced Repetition (SM-2) for Flashcards (Task 5.2)
+- **Context**: Flashcard learning required scientific active recall scheduling rather than static session-only reviews. In addition, when AI regenerates flashcards for a document, existing review history should not be lost.
+- **Decision**: 
+  - Designed deterministic `cardId` derivation (SHA-256 hash of normalized question text) so AI card regeneration preserves historical review progress for identical concepts.
+  - Implemented `CardReview` model with `{ userId, documentId, cardId, repetition, interval, easeFactor, dueDate, lastReviewed, history }` indexed on `{ userId: 1, documentId: 1, cardId: 1 }` and `{ userId: 1, dueDate: 1 }`.
+  - Implemented SuperMemo SM-2 engine (`sm2.js`) handling 4 ratings (1: Again, 2: Hard, 3: Good, 4: Easy), bounding easeFactor to >= 1.3, and calculating due dates.
+  - Built endpoints: `POST /api/flashcards/review`, `GET /api/flashcards/due`, `GET /api/flashcards/due-count`, and `GET /api/documents/:id/flashcards/reviews`. Added cascade deletion on document removal.
+  - Redesigned `FlashcardsPanel.jsx` adhering to `DESIGN.md`: persistent review status, 4 rating buttons under flipped cards with Geist Mono interval previews (`1d`, `6d`, etc.), keyboard shortcuts (Spacebar flip, 1/2/3/4 rating), and review state badges.
+  - Integrated `DueReviewModal.jsx` and "Review due today" action banner in `Dashboard.jsx`.
+- **Alternatives Considered**: In-memory session tracking (rejected because long-term retention requires multi-day persistent scheduling). Full SuperMemo SM-5/17 (overly complex parameter calibration for web app MVP).
+- **Impact**: Zero regressions — all 6 server test suites pass 100% (`test-api.js` 27/27, `test-tasks.js` 42/42, `test-documents.js` 40/40, `test-ai.js` 23/23, `test-citations.js` 40/40, `test-spaced-repetition.js` 46/46 — total 218/218 passing); Vite production build exits `0`.
+
 ---
+
 
 
 ## 4. Mandatory Verification Checklist

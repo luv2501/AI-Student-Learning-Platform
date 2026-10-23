@@ -1,7 +1,17 @@
 import mongoose from 'mongoose';
+import { computeCardId } from '../utils/cardId.js';
 
 const flashcardSchema = new mongoose.Schema(
-  { question: String, answer: String },
+  {
+    cardId: {
+      type: String,
+      default: function () {
+        return computeCardId(this.question);
+      },
+    },
+    question: { type: String, required: true },
+    answer: { type: String, required: true },
+  },
   { _id: false }
 );
 
@@ -90,7 +100,13 @@ export function formatPublicDocument(doc, { lightweight = false } = {}) {
     ...base,
     user: obj.user,
     notes: obj.notes || null,
-    flashcards: Array.isArray(obj.flashcards) ? obj.flashcards : [],
+    flashcards: Array.isArray(obj.flashcards)
+      ? obj.flashcards.map((c) => ({
+          cardId: c.cardId || computeCardId(c.question),
+          question: c.question,
+          answer: c.answer,
+        }))
+      : [],
     quiz: Array.isArray(obj.quiz) ? obj.quiz : [],
   };
 }

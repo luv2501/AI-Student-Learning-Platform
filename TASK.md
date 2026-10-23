@@ -179,3 +179,45 @@
   - [x] Verified `npm --prefix client run build` (0 errors).
   - [x] Verified all server test suites: `test-api.js` (27/27), `test-tasks.js` (42/42), `test-documents.js` (40/40), `test-ai.js` (23/23), `test-citations.js` (40/40).
 
+### Task 5.2: Spaced Repetition (SM-2) for Flashcards
+- [x] Data Architecture & Stable Flashcard Identities:
+  - [x] Created `server/src/utils/cardId.js` with deterministic SHA-256 hash generator `computeCardId(question)` (persists review progress across AI regenerations).
+  - [x] Created `server/src/models/CardReview.js` with fields: `userId`, `documentId`, `cardId`, `repetition`, `interval`, `easeFactor`, `dueDate`, `lastReviewed`, and `history` logs.
+  - [x] Re-exported model from `server/models/CardReview.js`.
+  - [x] Created compound unique index on `{ userId: 1, documentId: 1, cardId: 1 }` and index on `{ userId: 1, dueDate: 1 }`.
+  - [x] Updated `Document.js` `flashcardSchema` and `formatPublicDocument` to populate deterministic `cardId`.
+  - [x] Updated `aiService.js` `generateFlashcards` to attach deterministic `cardId`.
+  - [x] Added cascade deletion of `CardReview` records on document deletion in `documentController.js`.
+- [x] SM-2 Scheduling Engine & Endpoints:
+  - [x] Implemented standard SuperMemo SM-2 scheduler (`server/src/utils/sm2.js`):
+    - [x] Rating 1: Again (repetition = 0, interval = 1d, easeFactor -= 0.2).
+    - [x] Rating 2: Hard (repetition += 1, interval = round(prev * 1.2), easeFactor -= 0.15).
+    - [x] Rating 3: Good (repetition += 1, interval = 1d -> 6d -> round(prev * easeFactor)).
+    - [x] Rating 4: Easy (repetition += 1, interval = round(prev * easeFactor * 1.3), easeFactor += 0.15).
+    - [x] Bound easeFactor floor at 1.3; calculated `dueDate = now + interval days`.
+    - [x] Created `previewRatings` and `getCardState` helpers.
+  - [x] Implemented Endpoints (`server/src/controllers/flashcardController.js` and `server/src/routes/flashcardRoutes.js`):
+    - [x] `POST /api/flashcards/review`: accepts `{ documentId, cardId, rating }`, updates review, returns next review state and previews.
+    - [x] `GET /api/flashcards/due`: lists cards due across all documents with document title/id for unified review.
+    - [x] `GET /api/flashcards/due-count`: lightweight aggregation returning `{ dueCount }`.
+    - [x] `GET /api/documents/:id/flashcards/reviews`: returns user's review map for a document.
+- [x] Frontend: FlashcardsPanel & Dashboard Integration:
+  - [x] Created `client/src/lib/sm2.js` mirroring SM-2 math and preview calculations for zero latency.
+  - [x] Redesigned `client/src/components/pdf/FlashcardsPanel.jsx`:
+    - [x] Persistent SM-2 status and document review map loading.
+    - [x] 4 rating buttons under flipped cards: Again (1), Hard (2), Good (3), Easy (4).
+    - [x] Estimated next review interval preview in Geist Mono above each button (`1d`, `6d`, etc.).
+    - [x] Keyboard shortcuts: 1, 2, 3, 4 when card is flipped; Spacebar to flip; Left/Right arrows to navigate.
+    - [x] Review status badge (`New`, `Due`, `Learning`, `Review`) in Geist Mono with semantic Badge tones.
+    - [x] Due-only filtering toggle with badge count.
+  - [x] Updated `client/src/pages/Dashboard.jsx`:
+    - [x] Added `dueFlashcardsCount` query to dashboard `load()`.
+    - [x] Added "Review due today" action banner with active badge count and "Start review session" button.
+    - [x] Added "Review Due" quick action button in Cockpit Header.
+    - [x] Created `client/src/components/flashcards/DueReviewModal.jsx` for multi-document review sessions with focus trapping, progress bar, and workspace links.
+- [x] Testing & Verification:
+  - [x] Created `server/scripts/test-spaced-repetition.js` (46/46 tests passing).
+  - [x] Verified `npm --prefix client run build` (0 errors).
+  - [x] Verified 100% pass rate across all 6 test suites: `test-api.js` (27/27), `test-tasks.js` (42/42), `test-documents.js` (40/40), `test-ai.js` (23/23), `test-citations.js` (40/40), `test-spaced-repetition.js` (46/46) -> 218/218 passing.
+
+
