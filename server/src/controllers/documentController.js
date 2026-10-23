@@ -2,6 +2,7 @@ import fs from 'node:fs/promises';
 import Document from '../models/Document.js';
 import AskHistory from '../models/AskHistory.js';
 import CardReview from '../models/CardReview.js';
+import QuizAttempt from '../models/QuizAttempt.js';
 import apiError from '../utils/apiError.js';
 import { extractPdfText } from '../services/pdfService.js';
 import {
@@ -103,8 +104,11 @@ export async function deleteDocument(req, res) {
   if (!doc) throw apiError(404, 'Document not found');
 
   await removeFile(doc.filePath);
-  await AskHistory.deleteOne({ documentId: doc._id });
-  await CardReview.deleteMany({ documentId: doc._id });
+  await Promise.all([
+    AskHistory.deleteOne({ documentId: doc._id }),
+    CardReview.deleteMany({ documentId: doc._id }),
+    QuizAttempt.deleteMany({ documentId: doc._id }),
+  ]);
   res.json({ message: 'Document deleted', id: doc._id });
 }
 

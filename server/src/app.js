@@ -7,6 +7,7 @@ import taskRoutes from './routes/taskRoutes.js';
 import documentRoutes from './routes/documentRoutes.js';
 import aiRoutes from './routes/aiRoutes.js';
 import flashcardRoutes from './routes/flashcardRoutes.js';
+import quizRoutes from './routes/quizRoutes.js';
 import { notFound, errorHandler } from './middleware/errorHandler.js';
 
 const app = express();
@@ -39,6 +40,7 @@ app.use('/api/tasks', taskRoutes);
 app.use('/api/documents', documentRoutes);
 app.use('/api/ai', aiRoutes);
 app.use('/api/flashcards', flashcardRoutes);
+app.use('/api/quizzes', quizRoutes);
 
 app.use(notFound);
 app.use(errorHandler);

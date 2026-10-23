@@ -13,6 +13,8 @@ import {
   FileText,
   Layers,
   AlertTriangle,
+  Target,
+  Sparkles,
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext.jsx';
 import api, { apiErrorMessage } from '../lib/api.js';
@@ -29,6 +31,8 @@ import { SkeletonTaskList, SkeletonDocList } from '../components/ui/Skeleton.jsx
 import TaskForm from '../components/tasks/TaskForm.jsx';
 import TaskItem from '../components/tasks/TaskItem.jsx';
 import DueReviewModal from '../components/flashcards/DueReviewModal.jsx';
+import ScoreTrendChart from '../components/quizzes/ScoreTrendChart.jsx';
+import WeakSpotsPracticeModal from '../components/quizzes/WeakSpotsPracticeModal.jsx';
 
 function greeting() {
   const hour = new Date().getHours();
@@ -66,6 +70,8 @@ export default function Dashboard() {
   const [stats, setStats] = useState(null);
   const [dueFlashcardsCount, setDueFlashcardsCount] = useState(0);
   const [showDueModal, setShowDueModal] = useState(false);
+  const [quizSummary, setQuizSummary] = useState(null);
+  const [showWeakSpotsModal, setShowWeakSpotsModal] = useState(false);
   const [filter, setFilter] = useState('all');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -79,16 +85,20 @@ export default function Dashboard() {
   const load = useCallback(async () => {
     setError('');
     try {
-      const [taskRes, statsRes, docRes, dueRes] = await Promise.all([
+      const [taskRes, statsRes, docRes, dueRes, quizRes] = await Promise.all([
         api.get('/tasks'),
         api.get('/tasks/stats'),
         api.get('/documents'),
         api.get('/flashcards/due-count').catch(() => ({ data: { dueCount: 0 } })),
+        api.get('/quizzes/history/summary').catch(() => ({ data: null })),
       ]);
       setTasks(taskRes.data.tasks);
       setStats(statsRes.data.stats);
       setDocuments(docRes.data.documents);
       setDueFlashcardsCount(dueRes.data?.dueCount ?? 0);
+      if (quizRes.data) {
+        setQuizSummary(quizRes.data);
+      }
     } catch (err) {
       const msg = apiErrorMessage(err);
       setError(msg);
@@ -333,6 +343,81 @@ export default function Dashboard() {
           icon={<Layers className="h-4 w-4 stroke-[2]" aria-hidden="true" />}
           tone="amber"
         />
+      </div>
+
+      {/* Learning Analytics: Score Over Time & Knowledge Gaps */}
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
+        <div className="lg:col-span-2">
+          <ScoreTrendChart
+            scoreTrend={quizSummary?.scoreTrend || []}
+            averageScore={quizSummary?.averageScore || 0}
+            totalAttempts={quizSummary?.totalAttempts || 0}
+            bestScore={quizSummary?.bestScore || 0}
+          />
+        </div>
+
+        <div className="lg:col-span-1">
+          <Card padding="none" className="h-full flex flex-col justify-between">
+            <div>
+              <CardHeader
+                title="Knowledge Gaps"
+                subtitle={
+                  quizSummary?.weakSpots?.length > 0
+                    ? `${quizSummary.weakSpots.length} topic${quizSummary.weakSpots.length === 1 ? '' : 's'} scoring under 60%`
+                    : 'Accuracy across recent quizzes'
+                }
+                className="border-b border-border-subtle p-4 pb-3"
+              />
+
+              <div className="p-4">
+                {quizSummary?.weakSpots?.length === 0 || !quizSummary?.weakSpots ? (
+                  <div className="py-6 text-center">
+                    <Badge tone="emerald">No weak spots detected</Badge>
+                    <p className="mt-2 text-xs text-secondary leading-relaxed">
+                      All topics are scoring above 60% accuracy. Excellent recall consistency across your quizzes.
+                    </p>
+                  </div>
+                ) : (
+                  <div className="space-y-2.5">
+                    {quizSummary.weakSpots.slice(0, 4).map((ws) => (
+                      <div
+                        key={ws.topic}
+                        className="flex items-center justify-between gap-2 rounded-lg border border-border-subtle bg-subtle/40 p-2.5"
+                      >
+                        <div className="min-w-0 flex-1">
+                          <p className="truncate text-xs font-semibold text-primary">
+                            {ws.topic}
+                          </p>
+                          <p className="font-mono text-[10px] text-muted">
+                            {ws.missedCount} missed of {ws.totalQuestions} questions
+                          </p>
+                        </div>
+                        <Badge tone="rose" className="font-mono text-[11px] shrink-0">
+                          {ws.accuracy}% acc
+                        </Badge>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {quizSummary?.weakSpots?.length > 0 && (
+              <div className="border-t border-border-subtle p-3.5 bg-subtle/20">
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  fullWidth
+                  onClick={() => setShowWeakSpotsModal(true)}
+                  className="gap-1.5 text-accent border-accent/30 hover:bg-accent-subtle/30"
+                >
+                  <Sparkles className="h-3.5 w-3.5" aria-hidden="true" />
+                  <span>Practice weak spots</span>
+                </Button>
+              </div>
+            )}
+          </Card>
+        </div>
       </div>
 
       {/* Inline Task Form */}
@@ -621,6 +706,14 @@ export default function Dashboard() {
         isOpen={showDueModal}
         onClose={() => setShowDueModal(false)}
         onSessionFinished={load}
+      />
+
+      {/* Targeted Weak Spots Practice Modal */}
+      <WeakSpotsPracticeModal
+        isOpen={showWeakSpotsModal}
+        onClose={() => setShowWeakSpotsModal(false)}
+        weakSpots={quizSummary?.weakSpots || []}
+        onFinished={load}
       />
     </div>
   );

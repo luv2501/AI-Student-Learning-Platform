@@ -21,6 +21,7 @@ const quizQuestionSchema = new mongoose.Schema(
     options: [String],
     correctIndex: Number,
     explanation: String,
+    topic: { type: String, default: 'General' },
   },
   { _id: false }
 );
@@ -107,7 +108,15 @@ export function formatPublicDocument(doc, { lightweight = false } = {}) {
           answer: c.answer,
         }))
       : [],
-    quiz: Array.isArray(obj.quiz) ? obj.quiz : [],
+    quiz: Array.isArray(obj.quiz)
+      ? obj.quiz.map((q) => ({
+          question: q.question,
+          options: q.options,
+          correctIndex: q.correctIndex,
+          explanation: q.explanation,
+          topic: q.topic || 'General',
+        }))
+      : [],
   };
 }
 

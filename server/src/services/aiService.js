@@ -412,7 +412,7 @@ ${context}`,
   return cards;
 }
 
-/** Quiz: [{ question, options[], correctIndex, explanation }] */
+/** Quiz: [{ question, options[], correctIndex, explanation, topic }] */
 export async function generateQuiz(text, count = 8) {
   const chunks = chunkText(text);
   const context =
@@ -426,9 +426,9 @@ export async function generateQuiz(text, count = 8) {
     prompt: `Write ${count} multiple choice questions from the document below.
 
 Return a JSON array:
-[{ "question": "...", "options": ["a", "b", "c", "d"], "correctIndex": 0, "explanation": "why that answer is right" }]
+[{ "question": "...", "options": ["a", "b", "c", "d"], "correctIndex": 0, "explanation": "why that answer is right", "topic": "short topic name (e.g. Photosynthesis, Cellular Respiration)" }]
 
-Rules: exactly 4 options per question, only one correct, correctIndex is 0-based, plausible wrong options, explanation under 30 words, use only information from the document.
+Rules: exactly 4 options per question, only one correct, correctIndex is 0-based, plausible wrong options, explanation under 30 words, assign a concise topic name to each question, use only information from the document.
 
 DOCUMENT:
 ${context}`,
@@ -443,6 +443,7 @@ ${context}`,
       options: (Array.isArray(q?.options) ? q.options : []).map((o) => String(o).trim()).filter(Boolean),
       correctIndex: Number(q?.correctIndex),
       explanation: String(q?.explanation || '').trim(),
+      topic: String(q?.topic || 'General').trim() || 'General',
     }))
     .filter(
       (q) =>
@@ -454,6 +455,56 @@ ${context}`,
     );
 
   if (!questions.length) throw apiError(502, 'The AI did not return any usable questions. Please try again.');
+  return questions;
+}
+
+/** Targeted Weak Spots Quiz: generates practice questions targeting student knowledge gaps */
+export async function generateWeakSpotsQuiz(text, topics = [], count = 5) {
+  const chunks = chunkText(text);
+  const context =
+    chunks.length <= 1
+      ? chunks[0] || text
+      : rankDenseChunks(chunks, 3).join('\n\n--- Next Section ---\n\n');
+
+  const topicsList = Array.isArray(topics) && topics.length ? topics.join(', ') : 'challenging concepts';
+
+  const raw = await askAI({
+    json: true,
+    system: `You are a study assistant that generates focused remediation quizzes. ${JSON_ONLY}`,
+    prompt: `Write ${count} multiple choice practice questions from the document below, focusing strictly on these weak areas or topics: ${topicsList}.
+
+Return a JSON array:
+[{ "question": "...", "options": ["a", "b", "c", "d"], "correctIndex": 0, "explanation": "why that answer is right", "topic": "topic name matching one of the target weak areas" }]
+
+Rules: exactly 4 options per question, only one correct, correctIndex is 0-based, plausible wrong options, explanation under 30 words, assign a concise topic name to each question, use only information from the document.
+
+DOCUMENT:
+${context}`,
+  });
+
+  const data = parseJson(raw, 'quiz');
+  const list = firstArray(data);
+
+  const questions = (Array.isArray(list) ? list : [])
+    .map((q) => ({
+      question: String(q?.question || '').trim(),
+      options: (Array.isArray(q?.options) ? q.options : []).map((o) => String(o).trim()).filter(Boolean),
+      correctIndex: Number(q?.correctIndex),
+      explanation: String(q?.explanation || '').trim(),
+      topic: String(q?.topic || (Array.isArray(topics) && topics[0]) || 'General').trim() || 'General',
+    }))
+    .filter(
+      (q) =>
+        q.question &&
+        q.options.length >= 2 &&
+        Number.isInteger(q.correctIndex) &&
+        q.correctIndex >= 0 &&
+        q.correctIndex < q.options.length
+    );
+
+  if (!questions.length) {
+    throw apiError(502, 'The AI did not return any usable targeted questions. Please try again.');
+  }
   return questions;
 }
 

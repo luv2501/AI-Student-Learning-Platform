@@ -71,6 +71,12 @@ The AI layer is provider-agnostic and interfaces with standard OpenAI-compatible
 | POST   | /api/flashcards/review | yes | Submit SM-2 recall rating (1: Again, 2: Hard, 3: Good, 4: Easy) |
 | GET    | /api/flashcards/due    | yes | List all due flashcards across user documents |
 | GET    | /api/flashcards/due-count | yes | Count of flashcards due today for current user |
+| POST   | /api/documents/:id/quiz | yes | AI multiple choice practice quiz |
+| GET    | /api/documents/:id/quizzes/attempts | yes | Get past quiz attempts and weak spots for document |
+| POST   | /api/quizzes/attempts  | yes | Record quiz attempt with score and topic answers |
+| GET    | /api/quizzes/weak-spots | yes | Aggregate user weak topics across all documents |
+| POST   | /api/ai/quiz/weak-spots | yes | Generate 5-question targeted practice quiz (alias: `/api/quizzes/weak-spots`) |
+| GET    | /api/quizzes/history/summary | yes | Dashboard summary metrics (score trend, average, weak spots) |
 | POST   | /api/documents/:id/ask  | yes | Ask question about PDF with page citations (alias: `/api/ai/ask/:id`) |
 | GET    | /api/documents/:id/ask/history | yes | Get stored conversation history (alias: `/api/ai/ask/:id/history`) |
 | DELETE | /api/documents/:id/ask/history | yes | Clear conversation history (alias: `/api/ai/ask/:id/history`) |
@@ -108,6 +114,7 @@ npm --prefix server run test:documents  # PDF upload, extraction, ownership
 npm --prefix server run test:ai         # AI service & prompt formatting
 npm --prefix server run test:citations  # Citations & ask history persistence
 npm --prefix server run test:sm2        # Spaced repetition (SM-2) engine
+npm --prefix server run test:quiz       # Quiz history & weak spots detection
 npm --prefix server run check:db        # redacted MongoDB connection check
 ```
 All tests boot an in-memory MongoDB; no Atlas or external AI connection needed.

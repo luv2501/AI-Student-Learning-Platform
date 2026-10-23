@@ -15,6 +15,7 @@ import {
   clearAskHistory,
 } from '../controllers/documentController.js';
 import { getDocumentCardReviews } from '../controllers/flashcardController.js';
+import { getDocumentQuizAttempts } from '../controllers/quizController.js';
 
 const router = Router();
 
@@ -28,6 +29,7 @@ router.post('/:id/notes', aiLimiter, createNotes);
 router.post('/:id/flashcards', aiLimiter, createFlashcards);
 router.get('/:id/flashcards/reviews', getDocumentCardReviews);
 router.post('/:id/quiz', aiLimiter, createQuiz);
+router.get('/:id/quizzes/attempts', getDocumentQuizAttempts);
 router.post('/:id/ask', aiLimiter, askDocument);
 router.get('/:id/ask/history', getAskHistory);
 router.delete('/:id/ask/history', clearAskHistory);

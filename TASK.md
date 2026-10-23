@@ -220,4 +220,40 @@
   - [x] Verified `npm --prefix client run build` (0 errors).
   - [x] Verified 100% pass rate across all 6 test suites: `test-api.js` (27/27), `test-tasks.js` (42/42), `test-documents.js` (40/40), `test-ai.js` (23/23), `test-citations.js` (40/40), `test-spaced-repetition.js` (46/46) -> 218/218 passing.
 
+### Task 5.3: Quiz History and Weak Spots Detection
+- [x] Quiz Attempt Model & Database Persistence:
+  - [x] Created `server/src/models/QuizAttempt.js` and `server/models/QuizAttempt.js` with fields: `userId`, `documentId`, `score`, `totalQuestions`, `correctCount`, `answers` array with `topic`, and `createdAt`.
+  - [x] Created compound index `{ userId: 1, documentId: 1, createdAt: -1 }` and index `{ userId: 1, createdAt: -1 }`.
+  - [x] Updated `quizQuestionSchema` and public doc formatter in `server/src/models/Document.js` to store and surface `topic`.
+  - [x] Added cascade deletion in `server/src/controllers/documentController.js` to delete associated `QuizAttempt` records when a document is deleted.
+- [x] Weak Spots & Targeted Quizzing Engine:
+  - [x] Updated AI quiz prompt and parser in `server/src/services/aiService.js` to assign a concise `topic` attribute to every question.
+  - [x] Created `generateWeakSpotsQuiz(text, topics, count = 5)` in `aiService.js` to generate focused gap practice.
+  - [x] Implemented `calculateWeakSpots` in `server/src/controllers/quizController.js` (accuracy < 60% or repeatedly missed >= 2 times).
+  - [x] Endpoints implemented and mounted:
+    - [x] `POST /api/quizzes/attempts`: Save attempt with score, answers, and topics.
+    - [x] `GET /api/documents/:id/quizzes/attempts`: Return past attempts for a document chronologically.
+    - [x] `GET /api/quizzes/weak-spots`: Aggregate and return user's weak topics across all documents.
+    - [x] `POST /api/quizzes/weak-spots` and `POST /api/ai/quiz/weak-spots`: Generate targeted 5-question gap quiz.
+    - [x] `GET /api/quizzes/history/summary`: Lightweight summary for dashboard metrics (recent attempts, average score, score trend).
+- [x] Frontend: QuizPanel & Dashboard Analytics:
+  - [x] Updated `client/src/components/pdf/QuizPanel.jsx`:
+    - [x] Automatically persists completed quiz attempt via `POST /api/quizzes/attempts`.
+    - [x] Added accessible "Attempt History" modal dialog showing past scores, correct/total count, and timestamps in Geist Mono.
+    - [x] Added weak spots detection banner with topic chips and "Practice weak spots" button.
+    - [x] Implemented targeted quiz mode with active banner and return button.
+  - [x] Created `client/src/components/quizzes/ScoreTrendChart.jsx`:
+    - [x] Minimal, accessible SVG line/area chart adhering to semantic tokens (zero external chart libraries).
+    - [x] Displays gridlines (0%, 50%, 100%), hover/focus tooltips, data point dots, and accessible ARIA attributes.
+  - [x] Created `client/src/components/quizzes/WeakSpotsPracticeModal.jsx`:
+    - [x] Focus-trapped modal dialog for 5-question targeted gap practice right from Dashboard.
+  - [x] Updated `client/src/pages/Dashboard.jsx`:
+    - [x] Added quiz summary metrics to `load()`.
+    - [x] Integrated `ScoreTrendChart` and "Knowledge Gaps" weak spots card in a responsive 3-column layout.
+    - [x] Mounted `WeakSpotsPracticeModal`.
+- [x] Testing & Verification:
+  - [x] Created `server/scripts/test-quiz-history.js` (38/38 tests passing).
+  - [x] Verified `npm --prefix client run build` (0 errors).
+  - [x] Verified 100% pass rate across all 7 server test suites: `test-api.js` (27/27), `test-tasks.js` (42/42), `test-documents.js` (40/40), `test-ai.js` (23/23), `test-citations.js` (40/40), `test-spaced-repetition.js` (46/46), `test-quiz-history.js` (38/38) -> 256/256 passing.
+
 

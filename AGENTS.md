@@ -129,6 +129,19 @@ When making non-trivial architectural, structural, or dependency decisions, docu
 - **Alternatives Considered**: In-memory session tracking (rejected because long-term retention requires multi-day persistent scheduling). Full SuperMemo SM-5/17 (overly complex parameter calibration for web app MVP).
 - **Impact**: Zero regressions — all 6 server test suites pass 100% (`test-api.js` 27/27, `test-tasks.js` 42/42, `test-documents.js` 40/40, `test-ai.js` 23/23, `test-citations.js` 40/40, `test-spaced-repetition.js` 46/46 — total 218/218 passing); Vite production build exits `0`.
 
+### [2026-10-24] - Quiz History & Weak Spots Detection (Task 5.3)
+- **Context**: Students taking quizzes needed historical performance tracking, visibility into concept retention across quiz attempts, and automated gap remediation rather than repetitive random questioning.
+- **Decision**: 
+  - Created `QuizAttempt` model with `{ userId, documentId, score, totalQuestions, correctCount, answers: [{ question, selectedOption, correctOption, isCorrect, topic }], createdAt }` and compound indexes `{ userId: 1, documentId: 1, createdAt: -1 }` and `{ userId: 1, createdAt: -1 }`.
+  - Added cascade deletion of `QuizAttempt` records upon document deletion in `documentController.js`.
+  - Updated AI quiz generator prompt and parser in `aiService.js` to assign a concise `topic` string attribute to each generated question.
+  - Implemented weak spot aggregation (`quizController.js`): topics with accuracy < 60% or repeatedly missed >= 2 times are categorized as weak spots. Added `generateWeakSpotsQuiz(text, topics, count = 5)` for focused gap remediation.
+  - Built endpoints: `POST /api/quizzes/attempts`, `GET /api/documents/:id/quizzes/attempts`, `GET /api/quizzes/weak-spots`, `POST /api/quizzes/weak-spots` (and alias `POST /api/ai/quiz/weak-spots`), and `GET /api/quizzes/history/summary`.
+  - Updated `QuizPanel.jsx`: auto-persists completed attempts, provides an accessible "Attempt History" modal dialog in Geist Mono, and displays a weak spots detection banner with topic chips and a 1-click targeted practice trigger.
+  - Updated `Dashboard.jsx`: created a zero-dependency SVG `ScoreTrendChart` visualizer with hover/focus tooltips and accessible ARIA attributes, alongside a "Knowledge Gaps" weak spots card with `WeakSpotsPracticeModal` for on-demand 5-question targeted quizzes.
+- **Alternatives Considered**: In-memory session tracking (rejected because long-term learning requires cross-session gap detection). Heavy charting libraries like Chart.js or Recharts (rejected per anti-vibecode: lightweight vanilla SVG preserves fast bundle load, zero FOUC, and complete token fidelity).
+- **Impact**: Zero regressions — all 7 server test suites pass 100% (`test-api.js` 27/27, `test-tasks.js` 42/42, `test-documents.js` 40/40, `test-ai.js` 23/23, `test-citations.js` 40/40, `test-spaced-repetition.js` 46/46, `test-quiz-history.js` 38/38 — total 256/256 passing); Vite production build exits `0`.
+
 ---
 
 
