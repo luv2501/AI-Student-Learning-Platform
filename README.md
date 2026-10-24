@@ -51,29 +51,35 @@ Traditional study platforms treat documents as static files. Students spend hour
 ### 1. Dashboard & Focus Cockpit
 Central command center tracking library inventory, pending tasks, study streaks, today's focus minutes, and 7-day interactive focus and quiz trend visualizers.
 
-![Dashboard Cockpit](docs/screenshots/dashboard.png)
+| Dashboard Overview | Analytics & Activity Metrics |
+| :---: | :---: |
+| ![Dashboard Overview](docs/screenshots/Dashboard1_Dark.png) | ![Dashboard Metrics](docs/screenshots/Dashboard2_Dark.png) |
 
-### 2. Document Workspace & Real-Time SSE Streaming
-High-utility document reader with side-by-side study panels. Notes and answers stream progressively via Server-Sent Events with an instant "Stop generating" abort trigger and verified page citations.
+### 2. Document Workspace & Notes Library
+High-utility document reader with side-by-side study panels. Notes and answers stream progressively via Server-Sent Events with verified page citations.
 
-![Study Workspace Streaming](docs/screenshots/workspace-stream.png)
+| Notes & Study Workspace | Document Library Grid |
+| :---: | :---: |
+| ![Notes Workspace](docs/screenshots/NotesLibrary_dark.png) | ![Library Grid](docs/screenshots/Library_Dark.png) |
 
-### 3. Scientific Spaced Repetition (SuperMemo SM-2)
-Active recall card engine with four distinct review ratings (Again, Hard, Good, Easy), dynamic interval previews, and persistent due-date scheduling across document regenerations.
+### 3. Assessment & Knowledge Gaps
+Interactive multiple-choice practice engine tracking quiz attempts over time and highlighting weak concepts.
 
-![SM-2 Flashcards Interface](docs/screenshots/flashcards-sm2.png)
+![Quiz and Weak Spots](docs/screenshots/quiz_dark.png)
 
-### 4. Quiz History & Knowledge Gaps Detection
-Interactive multiple-choice practice engine tracking quiz attempts over time. Automatically identifies underperforming topics and launches targeted 5-question remedial quizzes.
+### 4. Task Management & Workflows
+Editorial minimalist task tracking board with status columns and due dates.
 
-![Quiz and Weak Spots Detection](docs/screenshots/quiz-weakspots.png)
+| Task Board View 1 | Task Board View 2 |
+| :---: | :---: |
+| ![Task View 1](docs/screenshots/Task_1Dark.png) | ![Task View 2](docs/screenshots/Task2_Dark.png) |
 
-### 5. Pomodoro Focus Timer & Timezone-Aware Streaks
-Configurable focus sessions (Pomodoro 25m, Short Break 5m, Long Break 15m) with minimal circular progress tracks, live document tab title counters, Web Audio chimes, and timezone-adjusted daily streak continuity.
+### 5. Application Design System & Profile
+Editorial minimalism with theme customization, WCAG AA compliance, and accessible auth shells.
 
-![Pomodoro Focus Timer](docs/screenshots/focus-timer.png)
-
----
+| Profile Settings (Dark) | Workspace Overview (Light) | Authentication Shell |
+| :---: | :---: | :---: |
+| ![Profile](docs/screenshots/Darkmodeprofile.png) | ![Light Theme](docs/screenshots/LightmMode_theme.png) | ![Login](docs/screenshots/LoginPage.png) |
 
 ## System Architecture
 
