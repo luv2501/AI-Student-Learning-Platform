@@ -17,6 +17,7 @@
     "test:sm2": "node scripts/test-spaced-repetition.js",
     "test:quiz": "node scripts/test-quiz-history.js",
     "test:streaming": "node scripts/test-streaming.js",
+    "test:streaks": "node scripts/test-streaks-timer.js",
     "check:db": "node scripts/check-db.js",
     "check:ai": "node scripts/check-ai.js",
     "seed:demo": "node scripts/seed-demo.js"
