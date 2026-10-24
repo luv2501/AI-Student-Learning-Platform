@@ -8,14 +8,17 @@ import apiError from '../utils/apiError.js';
  */
 export default async function protect(req, res, next) {
   const header = req.headers.authorization || '';
+  const token = header.startsWith('Bearer ')
+    ? header.slice(7)
+    : (req.query?.token || '');
 
-  if (!header.startsWith('Bearer ')) {
+  if (!token) {
     return next(apiError(401, 'Not authorized, no token provided'));
   }
 
   let decoded;
   try {
-    decoded = jwt.verify(header.slice(7), process.env.JWT_SECRET);
+    decoded = jwt.verify(token, process.env.JWT_SECRET);
   } catch {
     return next(apiError(401, 'Not authorized, token is invalid or expired'));
   }

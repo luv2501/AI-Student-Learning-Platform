@@ -142,7 +142,23 @@ When making non-trivial architectural, structural, or dependency decisions, docu
 - **Alternatives Considered**: In-memory session tracking (rejected because long-term learning requires cross-session gap detection). Heavy charting libraries like Chart.js or Recharts (rejected per anti-vibecode: lightweight vanilla SVG preserves fast bundle load, zero FOUC, and complete token fidelity).
 - **Impact**: Zero regressions — all 7 server test suites pass 100% (`test-api.js` 27/27, `test-tasks.js` 42/42, `test-documents.js` 40/40, `test-ai.js` 23/23, `test-citations.js` 40/40, `test-spaced-repetition.js` 46/46, `test-quiz-history.js` 38/38 — total 256/256 passing); Vite production build exits `0`.
 
+### [2026-10-24] - Server-Sent Events (SSE) AI Streaming (Task 5.4)
+- **Context**: Long-running LLM generation for Notes and Ask-PDF created UX latency and waiting spinners. Users needed progressive token streaming, real-time feedback, and the ability to cancel generation mid-stream without wasting server resources.
+- **Decision**: 
+  - Implemented `askAIStream` in `aiService.js` consuming OpenAI/Groq compatible streaming completion (`stream: true`) with native `ReadableStream` reader, backoff retries, and clean abort signals.
+  - Implemented `streamNotes` with high-utility markdown formatting and `parseNotesOutput` structured extractor, saving to `Document.notes` on stream completion.
+  - Implemented `streamAsk` with partial match protection isolating answer text from `---CITATIONS---` grounding delimiter, saving full exchanges to `AskHistory` upon finish.
+  - Built SSE routes: `GET /api/documents/:id/notes/stream` (with immediate cached fallback and `cached: true/false`), `POST /api/documents/:id/ask/stream` (and alias `/api/ai/ask/:id/stream`).
+  - Added query token support in `protect.js` for EventSource compatibility alongside standard Bearer auth.
+  - Forwarded client disconnects (`req.on('close')`) to `AbortController` to terminate upstream calls immediately.
+  - Created `useAiStream.js` hook in `client/src/hooks/` with `ReadableStream` reader and active abort controls.
+  - Upgraded `NotesPanel.jsx` with real-time progressive stream preview, Lucide `Square` "Stop generating" button, smooth auto-scroll, and cached notes fallback.
+  - Upgraded `AskPanel.jsx` with progressive real-time message bubble, Lucide `Square` "Stop" button, and smooth `animate-rise` citation reveal upon stream finish.
+- **Alternatives Considered**: WebSockets (rejected as overly heavy stateful protocol for unidirectional AI text generation where SSE is native, HTTP/2-friendly, and lightweight). Polling partial results (rejected due to excessive network overhead and high latency).
+- **Impact**: Zero regressions — all 8 server test suites pass 100% (`test-api.js` 27/27, `test-tasks.js` 42/42, `test-documents.js` 40/40, `test-ai.js` 23/23, `test-citations.js` 40/40, `test-spaced-repetition.js` 46/46, `test-quiz-history.js` 38/38, `test-streaming.js` 42/42 — total 298/298 passing); Vite production build exits `0`.
+
 ---
+
 
 
 

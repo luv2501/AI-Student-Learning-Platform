@@ -24,6 +24,10 @@ export function migrateAuthToken() {
   return token;
 }
 
+export function getAuthToken() {
+  return migrateAuthToken() || (typeof window !== 'undefined' ? localStorage.getItem(AUTH_TOKEN_KEY) : '') || '';
+}
+
 // Proactively run migration on module import in browser environments
 if (typeof window !== 'undefined') {
   try {

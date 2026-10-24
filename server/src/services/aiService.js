@@ -632,3 +632,480 @@ STUDENT QUESTION: ${question}`,
 
   return { answer, citations };
 }
+
+/**
+ * Streaming completion using OpenAI-compatible chat completions API (stream: true).
+ * Supports abort signals and progressive onToken callback.
+ */
+export async function askAIStream({
+  system,
+  prompt,
+  messages,
+  maxTokens = 3000,
+  onToken,
+  signal,
+}) {
+  const { apiKey, baseURL, model, bearer } = aiConfig();
+
+  if (!apiKey) {
+    throw apiError(503, 'AI features are not configured on the server. Set AI_API_KEY in server/.env');
+  }
+
+  const chatMessages = messages || [
+    { role: 'system', content: system },
+    { role: 'user', content: prompt },
+  ];
+
+  return retryWithBackoff(async () => {
+    let response;
+    try {
+      response = await fetch(`${baseURL}/chat/completions`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(bearer ? { Authorization: `Bearer ${apiKey}` } : { 'x-api-key': apiKey }),
+        },
+        body: JSON.stringify({
+          model,
+          max_completion_tokens: maxTokens,
+          temperature: 0.3,
+          stream: true,
+          ...(/gpt-oss/i.test(model) ? { reasoning_effort: 'low' } : {}),
+          messages: chatMessages,
+        }),
+        signal,
+      });
+    } catch (err) {
+      if (signal?.aborted || err.name === 'AbortError') {
+        const abortErr = new Error('Stream aborted by client');
+        abortErr.name = 'AbortError';
+        throw abortErr;
+      }
+      throw apiError(
+        502,
+        err.name === 'TimeoutError'
+          ? 'The AI service took too long to respond. Please try again.'
+          : 'Could not reach the AI service. Please try again.'
+      );
+    }
+
+    if (!response.ok) {
+      throw providerError(response.status, response.headers.get('retry-after'), await response.text());
+    }
+
+    const reader = response.body.getReader();
+    const decoder = new TextDecoder();
+    let buffer = '';
+    let fullText = '';
+
+    try {
+      while (true) {
+        if (signal?.aborted) {
+          await reader.cancel().catch(() => {});
+          const abortErr = new Error('Stream aborted by client');
+          abortErr.name = 'AbortError';
+          throw abortErr;
+        }
+
+        const { done, value } = await reader.read();
+        if (done) break;
+
+        buffer += decoder.decode(value, { stream: true });
+        const lines = buffer.split('\n');
+        buffer = lines.pop() || '';
+
+        for (const line of lines) {
+          const trimmed = line.trim();
+          if (!trimmed || trimmed.startsWith(':')) continue;
+          if (trimmed.startsWith('data: ')) {
+            const payload = trimmed.slice(6).trim();
+            if (payload === '[DONE]') {
+              return fullText;
+            }
+            try {
+              const parsed = JSON.parse(payload);
+              const token = parsed?.choices?.[0]?.delta?.content || '';
+              if (token) {
+                fullText += token;
+                if (typeof onToken === 'function') {
+                  onToken(token);
+                }
+              }
+            } catch {
+              // Ignore malformed chunk
+            }
+          }
+        }
+      }
+
+      if (buffer.trim().startsWith('data: ')) {
+        const payload = buffer.trim().slice(6).trim();
+        if (payload !== '[DONE]') {
+          try {
+            const parsed = JSON.parse(payload);
+            const token = parsed?.choices?.[0]?.delta?.content || '';
+            if (token) {
+              fullText += token;
+              if (typeof onToken === 'function') {
+                onToken(token);
+              }
+            }
+          } catch {}
+        }
+      }
+    } catch (err) {
+      if (signal?.aborted || err.name === 'AbortError') {
+        const abortErr = new Error('Stream aborted by client');
+        abortErr.name = 'AbortError';
+        throw abortErr;
+      }
+      throw err;
+    }
+
+    return fullText;
+  });
+}
+
+/**
+ * Parses study notes from generated Markdown or JSON into { summary, keyPoints, sections }.
+ */
+export function parseNotesOutput(rawText) {
+  const clean = String(rawText || '').trim();
+  if (!clean) {
+    return { summary: '', keyPoints: [], sections: [] };
+  }
+
+  // 1. Try parsing as JSON first
+  try {
+    const data = parseJson(clean, 'notes');
+    const keyPoints = (Array.isArray(data.keyPoints) ? data.keyPoints : [])
+      .map((p) => String(p).trim())
+      .filter(Boolean);
+
+    const sections = (Array.isArray(data.sections) ? data.sections : [])
+      .map((s) => ({
+        heading: String(s?.heading || '').trim(),
+        points: (Array.isArray(s?.points) ? s.points : []).map((p) => String(p).trim()).filter(Boolean),
+      }))
+      .filter((s) => s.heading && s.points.length);
+
+    if (sections.length === 0 && keyPoints.length > 0) {
+      sections.push({
+        heading: 'Core Concepts',
+        points: keyPoints.slice(0, 5),
+      });
+    }
+
+    return {
+      summary: String(data.summary || '').trim(),
+      keyPoints,
+      sections,
+    };
+  } catch {
+    // Continue to markdown parsing
+  }
+
+  // 2. Parse Markdown
+  let summary = '';
+  const keyPoints = [];
+  const sections = [];
+
+  const lines = clean.split('\n');
+  let currentSection = null;
+  let activeMode = null; // 'summary' | 'keyPoints' | 'sections'
+
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i].trim();
+    if (!line) continue;
+
+    // Check headings
+    if (/^#+\s*summary\b/i.test(line) || /^\*{1,2}summary\*{1,2}:?/i.test(line)) {
+      activeMode = 'summary';
+      continue;
+    }
+    if (/^#+\s*key\s+points?\b/i.test(line) || /^\*{1,2}key\s+points?\*{1,2}:?/i.test(line)) {
+      activeMode = 'keyPoints';
+      continue;
+    }
+    if (/^#+\s*sections?\b/i.test(line)) {
+      activeMode = 'sections';
+      continue;
+    }
+
+    if (activeMode === 'summary') {
+      if (/^#+/.test(line)) {
+        activeMode = null;
+      } else {
+        summary = summary ? `${summary} ${line}` : line;
+      }
+    } else if (activeMode === 'keyPoints') {
+      if (/^#+/.test(line)) {
+        activeMode = 'sections';
+      } else {
+        const bulletMatch = line.match(/^[-*•\d+.]\s*(.+)$/);
+        if (bulletMatch) {
+          keyPoints.push(bulletMatch[1].trim());
+        } else if (keyPoints.length > 0 && !line.startsWith('#')) {
+          keyPoints[keyPoints.length - 1] += ` ${line}`;
+        }
+      }
+    }
+
+    if (activeMode === 'sections' || (!activeMode && /^#+/.test(line))) {
+      const headingMatch = line.match(/^#+\s*(.+)$/);
+      if (headingMatch) {
+        const heading = headingMatch[1].replace(/^section\s*\d*:\s*/i, '').trim();
+        if (heading && !/^sections?$/i.test(heading)) {
+          currentSection = { heading, points: [] };
+          sections.push(currentSection);
+          activeMode = 'sections';
+          continue;
+        }
+      } else if (currentSection) {
+        const bulletMatch = line.match(/^[-*•\d+.]\s*(.+)$/);
+        if (bulletMatch) {
+          currentSection.points.push(bulletMatch[1].trim());
+        } else if (currentSection.points.length > 0) {
+          currentSection.points[currentSection.points.length - 1] += ` ${line}`;
+        }
+      }
+    }
+  }
+
+  // Fallbacks if headings were not explicitly standard
+  if (!summary && clean) {
+    const firstPara = clean.split(/\n\s*\n/)[0].replace(/^#+.*?\n/, '').trim();
+    summary = firstPara.slice(0, 300);
+  }
+
+  if (sections.length === 0 && keyPoints.length > 0) {
+    sections.push({
+      heading: 'Core Concepts',
+      points: keyPoints.slice(0, 5),
+    });
+  }
+
+  return {
+    summary: summary.trim(),
+    keyPoints: keyPoints.filter(Boolean),
+    sections: sections.filter((s) => s.heading && s.points.length),
+  };
+}
+
+/**
+ * Streams revision notes progressively and returns the parsed { summary, keyPoints, sections }.
+ */
+export async function streamNotes(documentText, onChunk, options = {}) {
+  const signal = options.signal;
+  const chunks = chunkText(documentText);
+  let content = documentText;
+  if (chunks.length > 1) {
+    content = rankDenseChunks(chunks, 3).join('\n\n--- Next Section ---\n\n');
+  }
+
+  const prompt = `Create comprehensive, structured study notes from the document below.
+
+Format your output EXACTLY as follows:
+## Summary
+A 2-3 sentence overview of the core concepts.
+
+## Key Points
+- Most essential takeaway 1
+- Most essential takeaway 2
+- Most essential takeaway 3
+- Most essential takeaway 4
+- Most essential takeaway 5
+
+## Sections
+### Section Heading 1
+- Bullet point explaining concept
+- Bullet point explaining concept
+
+### Section Heading 2
+- Bullet point explaining concept
+- Bullet point explaining concept
+
+Rules: Keep each bullet concise (under 25 words). Ground all content strictly in the document.
+
+DOCUMENT:
+${content}`;
+
+  let accumulated = '';
+  await askAIStream({
+    system: 'You are an academic study assistant that creates concise, high-utility revision notes.',
+    prompt,
+    maxTokens: 2500,
+    signal,
+    onToken: (token) => {
+      accumulated += token;
+      if (typeof onChunk === 'function') {
+        onChunk(token);
+      }
+    },
+  });
+
+  return parseNotesOutput(accumulated);
+}
+
+function getPartialMatchLength(str, target) {
+  for (let len = Math.min(str.length, target.length - 1); len > 0; len--) {
+    if (target.startsWith(str.slice(-len))) {
+      return len;
+    }
+  }
+  return 0;
+}
+
+/**
+ * Streams answer to student's question progressively, cleanly isolating answer tokens
+ * from grounding citation metadata, returning { answer, citations }.
+ */
+export async function streamAsk(documentOrText, question, history = [], onChunk, options = {}) {
+  const signal = options.signal;
+  let pages = [];
+
+  if (Array.isArray(documentOrText)) {
+    pages = documentOrText;
+  } else if (documentOrText && typeof documentOrText === 'object') {
+    if (Array.isArray(documentOrText.pages) && documentOrText.pages.length > 0) {
+      pages = documentOrText.pages;
+    } else {
+      const text = documentOrText.extractedText || documentOrText.text || '';
+      pages = [{ pageNumber: 1, text }];
+    }
+  } else if (typeof documentOrText === 'string') {
+    if (Array.isArray(options?.pages) && options.pages.length > 0) {
+      pages = options.pages;
+    } else {
+      pages = [{ pageNumber: 1, text: documentOrText }];
+    }
+  }
+
+  const selectedPages = rankPagesByQuery(pages, question, 12000);
+
+  const pagesContext = selectedPages
+    .map((p) => `--- PAGE ${p.pageNumber} ---\n${p.text}`)
+    .join('\n\n');
+
+  const system = `You are an academic study assistant that answers questions grounded strictly in the provided document.
+First, provide a clear, direct, plain-text answer explaining the concept (under 200 words, no markdown).
+Then, on a new line output:
+---CITATIONS---
+followed by a JSON array of citations:
+[{"pageNumber": 1, "passage": "Exact supporting sentence"}]
+If no information is found in the document, reply: "This document does not contain information to answer that question." followed by:
+---CITATIONS---
+[]
+Each citation must have an integer pageNumber matching the page where the passage appears, and a concise passage quoting the text.`;
+
+  const prompt = `DOCUMENT (BY PAGE):
+${pagesContext}
+
+STUDENT QUESTION: ${question}`;
+
+  let accumulated = '';
+  let citationsReached = false;
+  let pendingBuffer = '';
+
+  await askAIStream({
+    system,
+    prompt,
+    maxTokens: 2000,
+    signal,
+    onToken: (token) => {
+      accumulated += token;
+      if (citationsReached) {
+        return;
+      }
+
+      const combined = pendingBuffer + token;
+      const delimiterIndex = combined.indexOf('---CITATIONS---');
+
+      if (delimiterIndex !== -1) {
+        citationsReached = true;
+        const answerChunk = combined.slice(0, delimiterIndex);
+        if (answerChunk && typeof onChunk === 'function') {
+          onChunk(answerChunk);
+        }
+        pendingBuffer = '';
+      } else {
+        const partialMatchLen = getPartialMatchLength(combined, '---CITATIONS---');
+        if (partialMatchLen > 0) {
+          const safeChunk = combined.slice(0, combined.length - partialMatchLen);
+          if (safeChunk && typeof onChunk === 'function') {
+            onChunk(safeChunk);
+          }
+          pendingBuffer = combined.slice(combined.length - partialMatchLen);
+        } else {
+          if (typeof onChunk === 'function') {
+            onChunk(combined);
+          }
+          pendingBuffer = '';
+        }
+      }
+    },
+  });
+
+  if (!citationsReached && pendingBuffer && typeof onChunk === 'function') {
+    onChunk(pendingBuffer);
+  }
+
+  let answer = '';
+  let citations = [];
+
+  if (accumulated.includes('---CITATIONS---')) {
+    const parts = accumulated.split('---CITATIONS---');
+    answer = parts[0].replace(/^ANSWER:\s*/i, '').trim();
+    const citationsRaw = (parts[1] || '').trim();
+
+    try {
+      const parsed = JSON.parse(citationsRaw);
+      if (Array.isArray(parsed)) {
+        citations = parsed
+          .map((c) => ({
+            pageNumber: Number(c.pageNumber || c.page),
+            passage: String(c.passage || c.quote || c.text || '').trim(),
+          }))
+          .filter((c) => Number.isInteger(c.pageNumber) && c.pageNumber > 0 && c.passage.length > 0);
+      }
+    } catch {
+      const match = citationsRaw.match(/\[\s*\{.*\}\s*\]/s);
+      if (match) {
+        try {
+          const parsed = JSON.parse(match[0]);
+          if (Array.isArray(parsed)) {
+            citations = parsed
+              .map((c) => ({
+                pageNumber: Number(c.pageNumber || c.page),
+                passage: String(c.passage || c.quote || c.text || '').trim(),
+              }))
+              .filter((c) => Number.isInteger(c.pageNumber) && c.pageNumber > 0 && c.passage.length > 0);
+          }
+        } catch {}
+      }
+    }
+  } else {
+    try {
+      const parsed = parseJson(accumulated, 'answer and citations');
+      answer = String(parsed.answer || '').trim();
+      if (Array.isArray(parsed.citations)) {
+        citations = parsed.citations
+          .map((c) => ({
+            pageNumber: Number(c.pageNumber || c.page),
+            passage: String(c.passage || c.quote || c.text || '').trim(),
+          }))
+          .filter((c) => Number.isInteger(c.pageNumber) && c.pageNumber > 0 && c.passage.length > 0);
+      }
+    } catch {
+      answer = accumulated.trim();
+      citations = [];
+    }
+  }
+
+  if (!answer) {
+    throw apiError(502, 'The AI returned an empty answer. Please try again.');
+  }
+
+  return { answer, citations };
+}
+

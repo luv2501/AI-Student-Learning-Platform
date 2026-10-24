@@ -10,6 +10,8 @@ import {
   generateFlashcards,
   generateQuiz,
   answerQuestion,
+  streamNotes,
+  streamAsk,
 } from '../services/aiService.js';
 
 /** Loads a document that belongs to the logged in user, or 404s. */
@@ -197,3 +199,152 @@ export async function clearAskHistory(req, res) {
     documentId: doc._id,
   });
 }
+
+function sendSSEEvent(res, event, data) {
+  res.write(`event: ${event}\ndata: ${JSON.stringify(data)}\n\n`);
+}
+
+/**
+ * GET or POST /api/documents/:id/notes/stream
+ * Server-Sent Events stream for progressive note generation.
+ */
+export async function streamNotesRoute(req, res) {
+  res.setHeader('Content-Type', 'text/event-stream');
+  res.setHeader('Cache-Control', 'no-cache, no-transform');
+  res.setHeader('Connection', 'keep-alive');
+  res.setHeader('X-Accel-Buffering', 'no');
+  res.flushHeaders?.();
+
+  try {
+    const doc = await findOwned(req, { withText: true });
+    const refresh = req.query.refresh === 'true' || req.body?.refresh === true;
+
+    if (!refresh && doc.notes) {
+      sendSSEEvent(res, 'done', { notes: doc.notes, cached: true });
+      return res.end();
+    }
+
+    const abortController = new AbortController();
+    let disconnected = false;
+
+    req.on('close', () => {
+      if (!res.writableEnded) {
+        disconnected = true;
+        abortController.abort();
+      }
+    });
+
+    const notes = await streamNotes(
+      doc.extractedText,
+      (chunk) => {
+        if (!disconnected) {
+          sendSSEEvent(res, 'token', { text: chunk });
+        }
+      },
+      { signal: abortController.signal }
+    );
+
+    if (!disconnected) {
+      doc.notes = notes;
+      await doc.save();
+
+      sendSSEEvent(res, 'done', { notes: doc.notes, cached: false });
+      res.end();
+    }
+  } catch (err) {
+    if (err.name === 'AbortError') {
+      return res.end();
+    }
+    const message = err?.message || 'Failed to stream notes';
+    sendSSEEvent(res, 'error', { message });
+    res.end();
+  }
+}
+
+/**
+ * POST /api/documents/:id/ask/stream or /api/ai/ask/:id/stream
+ * Server-Sent Events stream for progressive question answering with citations.
+ */
+export async function streamAskRoute(req, res) {
+  res.setHeader('Content-Type', 'text/event-stream');
+  res.setHeader('Cache-Control', 'no-cache, no-transform');
+  res.setHeader('Connection', 'keep-alive');
+  res.setHeader('X-Accel-Buffering', 'no');
+  res.flushHeaders?.();
+
+  try {
+    const question = String(req.body?.question || '').trim();
+
+    if (question.length < 3) {
+      sendSSEEvent(res, 'error', { message: 'Please type a question first' });
+      return res.end();
+    }
+    if (question.length > 500) {
+      sendSSEEvent(res, 'error', { message: 'Question is too long (500 characters max)' });
+      return res.end();
+    }
+
+    const doc = await findOwned(req, { withText: true });
+
+    const abortController = new AbortController();
+    let disconnected = false;
+
+    req.on('close', () => {
+      if (!res.writableEnded) {
+        disconnected = true;
+        abortController.abort();
+      }
+    });
+
+    const { answer, citations } = await streamAsk(
+      doc,
+      question,
+      [],
+      (token) => {
+        if (!disconnected) {
+          sendSSEEvent(res, 'token', { text: token });
+        }
+      },
+      { signal: abortController.signal, pages: doc.pages }
+    );
+
+    if (!disconnected) {
+      // Persist conversation exchange to AskHistory
+      const userMsg = {
+        role: 'user',
+        content: question,
+        createdAt: new Date(),
+      };
+
+      const assistantMsg = {
+        role: 'assistant',
+        content: answer,
+        citations: citations || [],
+        createdAt: new Date(),
+      };
+
+      await AskHistory.findOneAndUpdate(
+        { userId: req.user._id, documentId: doc._id },
+        {
+          $push: { messages: { $each: [userMsg, assistantMsg] } },
+        },
+        { upsert: true, returnDocument: 'after', setDefaultsOnInsert: true }
+      );
+
+      sendSSEEvent(res, 'done', {
+        question,
+        answer,
+        citations: citations || [],
+      });
+      res.end();
+    }
+  } catch (err) {
+    if (err.name === 'AbortError') {
+      return res.end();
+    }
+    const message = err?.message || 'Failed to stream answer';
+    sendSSEEvent(res, 'error', { message });
+    res.end();
+  }
+}
+

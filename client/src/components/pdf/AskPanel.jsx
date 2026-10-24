@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { toast } from 'sonner';
-import { MessageSquare, Send, BookOpen, RotateCcw, FileText, X } from 'lucide-react';
+import { MessageSquare, Send, BookOpen, RotateCcw, FileText, X, Square } from 'lucide-react';
 import api, { apiErrorMessage } from '../../lib/api.js';
 import Card from '../ui/Card.jsx';
 import Button from '../ui/Button.jsx';
@@ -8,6 +8,7 @@ import Alert from '../ui/Alert.jsx';
 import Spinner from '../ui/Spinner.jsx';
 import EmptyState from '../ui/EmptyState.jsx';
 import Modal from '../ui/Modal.jsx';
+import { useAiStream } from '../../hooks/useAiStream.js';
 
 const examples = [
   'Summarise this in one paragraph',
@@ -19,12 +20,13 @@ const examples = [
 export default function AskPanel({ document: doc }) {
   const [question, setQuestion] = useState('');
   const [thread, setThread] = useState([]);
-  const [loading, setLoading] = useState(false);
   const [historyLoading, setHistoryLoading] = useState(true);
   const [error, setError] = useState('');
   const [activeCitation, setActiveCitation] = useState(null);
   const [showClearModal, setShowClearModal] = useState(false);
   const [clearing, setClearing] = useState(false);
+
+  const { isStreaming, startStream, stopStream } = useAiStream();
 
   const endRef = useRef(null);
   const inputRef = useRef(null);
@@ -50,6 +52,7 @@ export default function AskPanel({ document: doc }) {
                   answer: next.content,
                   citations: next.citations || [],
                   createdAt: next.createdAt,
+                  isStreaming: false,
                 });
                 i++;
               } else {
@@ -58,6 +61,7 @@ export default function AskPanel({ document: doc }) {
                   answer: '',
                   citations: [],
                   createdAt: m.createdAt,
+                  isStreaming: false,
                 });
               }
             } else if (m.role === 'assistant') {
@@ -66,6 +70,7 @@ export default function AskPanel({ document: doc }) {
                 answer: m.content,
                 citations: m.citations || [],
                 createdAt: m.createdAt,
+                isStreaming: false,
               });
             }
           }
@@ -86,7 +91,7 @@ export default function AskPanel({ document: doc }) {
 
   useEffect(() => {
     endRef.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-  }, [thread, loading]);
+  }, [thread, isStreaming]);
 
   async function ask(text) {
     const asked = (text ?? question).trim();
@@ -96,29 +101,83 @@ export default function AskPanel({ document: doc }) {
       return;
     }
 
-    setLoading(true);
     setError('');
     setQuestion('');
+
+    const newEntry = {
+      question: asked,
+      answer: '',
+      citations: [],
+      isStreaming: true,
+    };
+    setThread((prev) => [...prev, newEntry]);
+
     try {
-      const { data } = await api.post(`/ai/ask/${doc._id}`, { question: asked });
-      setThread((t) => [
-        ...t,
-        {
-          question: data.question,
-          answer: data.answer,
-          citations: data.citations || [],
+      await startStream(`/documents/${doc._id}/ask/stream`, {
+        method: 'POST',
+        body: { question: asked },
+        onToken: (_token, accumulated) => {
+          setThread((prev) => {
+            const next = [...prev];
+            const lastIdx = next.length - 1;
+            if (lastIdx >= 0 && next[lastIdx].isStreaming) {
+              next[lastIdx] = {
+                ...next[lastIdx],
+                answer: accumulated,
+              };
+            }
+            return next;
+          });
         },
-      ]);
-      // Refocus input so the user can ask a follow-up immediately
-      setTimeout(() => inputRef.current?.focus(), 100);
-    } catch (err) {
-      const msg = apiErrorMessage(err);
-      setError(msg);
-      toast.error(msg);
-      setQuestion(asked);
-    } finally {
-      setLoading(false);
+        onDone: (payload) => {
+          setThread((prev) => {
+            const next = [...prev];
+            const lastIdx = next.length - 1;
+            if (lastIdx >= 0) {
+              next[lastIdx] = {
+                ...next[lastIdx],
+                answer: payload.answer || next[lastIdx].answer,
+                citations: payload.citations || [],
+                isStreaming: false,
+              };
+            }
+            return next;
+          });
+          setTimeout(() => inputRef.current?.focus(), 100);
+        },
+        onError: (err) => {
+          const msg = err?.message || 'Failed to get answer';
+          setError(msg);
+          toast.error(msg);
+          setThread((prev) => {
+            const next = [...prev];
+            const lastIdx = next.length - 1;
+            if (lastIdx >= 0 && next[lastIdx].isStreaming) {
+              if (!next[lastIdx].answer) {
+                return next.slice(0, lastIdx);
+              }
+              next[lastIdx] = { ...next[lastIdx], isStreaming: false };
+            }
+            return next;
+          });
+        },
+      });
+    } catch {
+      // Handled via onError
     }
+  }
+
+  function handleStop() {
+    stopStream();
+    setThread((prev) => {
+      const next = [...prev];
+      const lastIdx = next.length - 1;
+      if (lastIdx >= 0 && next[lastIdx].isStreaming) {
+        next[lastIdx] = { ...next[lastIdx], isStreaming: false };
+      }
+      return next;
+    });
+    toast.info('Answer generation stopped');
   }
 
   async function handleClearHistory() {
@@ -155,7 +214,7 @@ export default function AskPanel({ document: doc }) {
             type="button"
             variant="ghost"
             size="sm"
-            disabled={loading || clearing}
+            disabled={isStreaming || clearing}
             onClick={() => setShowClearModal(true)}
             className="gap-1.5 text-xs text-secondary hover:text-danger hover:border-danger/30"
             aria-label="Clear conversation history"
@@ -180,7 +239,7 @@ export default function AskPanel({ document: doc }) {
               <Spinner size="md" />
               <span className="font-mono text-xs text-muted">Loading saved conversation...</span>
             </div>
-          ) : thread.length === 0 && !loading ? (
+          ) : thread.length === 0 ? (
             <EmptyState
               icon={<MessageSquare className="h-6 w-6 text-muted" aria-hidden="true" />}
               title="Ask anything about this document"
@@ -199,8 +258,8 @@ export default function AskPanel({ document: doc }) {
                   </div>
                 )}
 
-                {/* AI answer: left-aligned */}
-                {entry.answer && (
+                {/* AI answer bubble */}
+                {(entry.answer || entry.isStreaming) && (
                   <div className="flex items-start gap-2.5" aria-label="AI answer">
                     {/* AI avatar chip */}
                     <div
@@ -216,22 +275,47 @@ export default function AskPanel({ document: doc }) {
                         <span className="rounded-xs border border-border-subtle bg-subtle px-1.5 py-0.5 font-mono text-[10px] font-medium text-muted">
                           {docTitle.replace(/\.pdf$/i, '')}
                         </span>
-                        {entry.citations?.length > 0 && (
-                          <span className="rounded-xs border border-accent/20 bg-accent/5 px-1.5 py-0.5 font-mono text-[10px] font-semibold text-accent">
+                        {entry.isStreaming ? (
+                          <span className="inline-flex items-center gap-1 rounded-xs border border-accent/20 bg-accent/5 px-1.5 py-0.5 font-mono text-[10px] font-semibold text-accent">
+                            <span className="h-1.5 w-1.5 rounded-full bg-accent animate-ping" />
+                            streaming
+                          </span>
+                        ) : entry.citations?.length > 0 ? (
+                          <span className="rounded-xs border border-accent/20 bg-accent/5 px-1.5 py-0.5 font-mono text-[10px] font-semibold text-accent animate-rise">
                             {entry.citations.length}{' '}
                             {entry.citations.length === 1 ? 'citation' : 'citations'}
                           </span>
-                        )}
+                        ) : null}
                       </div>
 
                       {/* Answer bubble */}
                       <div className="whitespace-pre-line rounded-xl rounded-tl-sm border border-border-subtle bg-surface px-4 py-3 text-sm leading-relaxed text-secondary shadow-xs">
-                        {entry.answer}
+                        {entry.answer ? (
+                          <>
+                            {entry.answer}
+                            {entry.isStreaming && (
+                              <span
+                                className="inline-block h-3.5 w-1.5 ml-1 translate-y-0.5 bg-accent animate-pulse"
+                                aria-hidden="true"
+                              />
+                            )}
+                          </>
+                        ) : (
+                          <div className="flex items-center gap-2 py-0.5">
+                            {[0, 1, 2].map((j) => (
+                              <span
+                                key={j}
+                                className="h-1.5 w-1.5 animate-bounce rounded-full bg-accent"
+                                style={{ animationDelay: `${j * 140}ms` }}
+                              />
+                            ))}
+                          </div>
+                        )}
                       </div>
 
-                      {/* Clickable Citation Chips */}
-                      {entry.citations?.length > 0 && (
-                        <div className="space-y-2 pt-1">
+                      {/* Clickable Citation Chips (revealed once stream finishes) */}
+                      {!entry.isStreaming && entry.citations?.length > 0 && (
+                        <div className="animate-rise space-y-2 pt-1">
                           <div className="flex flex-wrap items-center gap-1.5">
                             <span className="font-mono text-[10px] font-semibold uppercase tracking-wider text-muted">
                               Sources:
@@ -294,27 +378,6 @@ export default function AskPanel({ document: doc }) {
             ))
           )}
 
-          {/* AI thinking indicator */}
-          {loading && (
-            <div className="flex items-start gap-2.5">
-              <div
-                className="mt-0.5 grid h-7 w-7 shrink-0 place-items-center rounded-md border border-border-subtle bg-subtle"
-                aria-hidden="true"
-              >
-                <BookOpen className="h-3.5 w-3.5 stroke-[1.75] text-accent" />
-              </div>
-              <div className="flex items-center gap-2 rounded-xl rounded-tl-sm border border-border-subtle bg-surface px-4 py-3 shadow-xs">
-                {[0, 1, 2].map((j) => (
-                  <span
-                    key={j}
-                    className="h-1.5 w-1.5 animate-bounce rounded-full bg-accent"
-                    style={{ animationDelay: `${j * 140}ms` }}
-                  />
-                ))}
-              </div>
-            </div>
-          )}
-
           <div ref={endRef} />
         </div>
 
@@ -334,22 +397,34 @@ export default function AskPanel({ document: doc }) {
                 type="text"
                 value={question}
                 onChange={(e) => setQuestion(e.target.value)}
-                placeholder="Ask a question about this document..."
-                disabled={loading}
+                placeholder={isStreaming ? 'AI is responding...' : 'Ask a question about this document...'}
+                disabled={isStreaming}
                 className="w-full rounded-md border border-border-subtle bg-surface py-2 pl-3 pr-3 text-sm text-primary outline-none transition-colors placeholder:text-muted hover:border-primary/40 focus:border-accent focus:ring-1 focus:ring-accent disabled:cursor-not-allowed disabled:opacity-50"
                 aria-label="Type your question about this document"
               />
             </div>
-            <Button
-              type="submit"
-              disabled={loading || !question.trim()}
-              loading={loading}
-              className="gap-1.5 shrink-0"
-              aria-label="Send question"
-            >
-              {!loading && <Send className="h-3.5 w-3.5 stroke-[2]" aria-hidden="true" />}
-              <span>Ask</span>
-            </Button>
+            {isStreaming ? (
+              <Button
+                type="button"
+                variant="secondary"
+                onClick={handleStop}
+                className="gap-1.5 shrink-0 text-danger border-danger/30 hover:bg-danger/10"
+                aria-label="Stop generating answer"
+              >
+                <Square className="h-3.5 w-3.5 fill-current" aria-hidden="true" />
+                <span>Stop</span>
+              </Button>
+            ) : (
+              <Button
+                type="submit"
+                disabled={isStreaming || !question.trim()}
+                className="gap-1.5 shrink-0"
+                aria-label="Send question"
+              >
+                <Send className="h-3.5 w-3.5 stroke-[2]" aria-hidden="true" />
+                <span>Ask</span>
+              </Button>
+            )}
           </div>
 
           {/* Quick suggestion chips */}
@@ -362,7 +437,7 @@ export default function AskPanel({ document: doc }) {
                 key={ex}
                 type="button"
                 onClick={() => ask(ex)}
-                disabled={loading}
+                disabled={isStreaming}
                 className="cursor-pointer rounded-sm border border-border-subtle bg-subtle px-2 py-1 text-[11px] text-secondary transition-colors hover:border-primary/40 hover:bg-surface hover:text-primary disabled:cursor-not-allowed disabled:opacity-50"
               >
                 {ex}

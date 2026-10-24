@@ -256,4 +256,40 @@
   - [x] Verified `npm --prefix client run build` (0 errors).
   - [x] Verified 100% pass rate across all 7 server test suites: `test-api.js` (27/27), `test-tasks.js` (42/42), `test-documents.js` (40/40), `test-ai.js` (23/23), `test-citations.js` (40/40), `test-spaced-repetition.js` (46/46), `test-quiz-history.js` (38/38) -> 256/256 passing.
 
+### Task 5.4: Streaming (Server-Sent Events) for AI Output
+- [x] SSE Infrastructure & LLM Streaming Service:
+  - [x] Implemented `askAIStream({ system, prompt, messages, maxTokens, onToken, signal })` using OpenAI/Groq compatible streaming completion (`stream: true`).
+  - [x] Implemented `streamNotes(documentText, onChunk, options)` with structured markdown notes prompt and `parseNotesOutput` extractor.
+  - [x] Implemented `streamAsk(documentText, question, history, onChunk, options)` with delimiter-based citation extraction (`---CITATIONS---`).
+  - [x] Handled stream cancellation via `AbortController` and `req.on('close')`, forwarding abort signals to cancel upstream LLM calls cleanly.
+  - [x] Accumulated responses and persisted to MongoDB (`Document.notes` and `AskHistory`) on stream finish without breaking data contracts.
+- [x] API Routes & SSE Protocols:
+  - [x] `GET /api/documents/:id/notes/stream` (and `POST` endpoint):
+    - [x] Set SSE headers (`Content-Type: text/event-stream`, `Cache-Control: no-cache`, `Connection: keep-alive`).
+    - [x] Stream structured events: `event: token` with `{"text": "..."}`, `event: done` with `{"notes": {...}, "cached": boolean}`, `event: error` with `{"message": "..."}`.
+    - [x] Immediate cached fallback if notes already exist and refresh is not requested.
+  - [x] `POST /api/documents/:id/ask/stream` (and alias `/api/ai/ask/:id/stream`):
+    - [x] Stream progressive answer tokens cleanly.
+    - [x] Include citations array in `event: done` payload.
+    - [x] Save complete user and assistant exchange to `AskHistory` on finish.
+  - [x] Authentication & Resilience:
+    - [x] Supported standard Bearer JWT authentication and query token fallback in `protect.js`.
+    - [x] Handled edge disconnects cleanly without unhandled rejections or leaked connections.
+- [x] Frontend: Streaming Hook & UI Components:
+  - [x] Created `client/src/hooks/useAiStream.js` using `fetch` with `ReadableStream` reader, token parsing, and active `stopStream` abort controller.
+  - [x] Updated `client/src/components/pdf/NotesPanel.jsx`:
+    - [x] Replaced waiting spinner with progressive token streaming view with blinking indicator.
+    - [x] Rendered persistent "Stop generating" button with Lucide `Square`.
+    - [x] Smoothly auto-scrolls as new tokens arrive if user is near bottom.
+    - [x] Handled fallback to existing cached notes with live regeneration stream preview.
+  - [x] Updated `client/src/components/pdf/AskPanel.jsx`:
+    - [x] Progressively streams assistant message bubble in real-time.
+    - [x] Shows "Stop" button with Lucide `Square` during active stream.
+    - [x] Animates and reveals citation chips with `animate-rise` once stream completes and `done` payload arrives.
+- [x] Testing & Verification:
+  - [x] Created `server/scripts/test-streaming.js` (42/42 tests passing).
+  - [x] Verified `npm --prefix client run build` (0 errors).
+  - [x] Verified 100% pass rate across all 8 server test suites: `test-api.js` (27/27), `test-tasks.js` (42/42), `test-documents.js` (40/40), `test-ai.js` (23/23), `test-citations.js` (40/40), `test-spaced-repetition.js` (46/46), `test-quiz-history.js` (38/38), `test-streaming.js` (42/42) -> 298/298 passing.
+
+
 
