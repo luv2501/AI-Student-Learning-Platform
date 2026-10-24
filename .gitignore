@@ -1,14 +1,24 @@
 # dependencies
 node_modules/
+client/node_modules/
+server/node_modules/
 
-# secrets
+# secrets & environment
 .env
 .env.*
 !.env.example
+*.local
 
 # build output
 dist/
 build/
+client/dist/
+client/build/
+
+# test coverage & caches
+coverage/
+.nyc_output/
+*.lcov
 
 # uploads (keep the folder)
 server/uploads/*

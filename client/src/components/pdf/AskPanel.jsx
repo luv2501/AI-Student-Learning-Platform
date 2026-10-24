@@ -77,7 +77,7 @@ export default function AskPanel({ document: doc }) {
           setThread(pairs);
         }
       } catch (err) {
-        console.warn('Could not load ask history:', err);
+        console.error('[AskHistory] Failed to load previous discussion history:', err);
       } finally {
         if (active) setHistoryLoading(false);
       }

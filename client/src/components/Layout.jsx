@@ -4,7 +4,7 @@ import { useAuth } from '../context/AuthContext.jsx';
 import Sidebar from './navigation/Sidebar.jsx';
 import { MobileHeader, MobileBottomBar } from './navigation/MobileNav.jsx';
 import PublicNav from './navigation/PublicNav.jsx';
-import { Logo } from './Navbar.jsx';
+import { Logo } from './Logo.jsx';
 
 const SIDEBAR_STORAGE_KEY = 'filesense_sidebar_collapsed';
 

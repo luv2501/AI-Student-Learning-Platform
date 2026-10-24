@@ -8,7 +8,7 @@ import {
   Settings,
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext.jsx';
-import { Logo } from '../Navbar.jsx';
+import { Logo } from '../Logo.jsx';
 import ThemeToggle from '../ThemeToggle.jsx';
 
 export function MobileHeader() {

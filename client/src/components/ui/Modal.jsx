@@ -1,9 +1,11 @@
 import { useEffect, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
 
 /**
  * Accessible, WCAG 2.1 AA compliant Modal Dialog.
- * Enforces focus trapping, Escape dismissal, focus restoration, and backdrop lock.
+ * Enforces focus trapping, Escape dismissal, focus restoration, backdrop lock,
+ * and viewport centering via React Portal directly into document.body.
  */
 export default function Modal({
   isOpen,
@@ -13,6 +15,7 @@ export default function Modal({
   children,
   maxWidth = 'max-w-md',
   className = '',
+  ariaLabel,
 }) {
   const modalRef = useRef(null);
   const previousActiveElement = useRef(null);
@@ -93,27 +96,26 @@ export default function Modal({
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [isOpen, onClose]);
 
-  return (
+  const modalNode = (
     <AnimatePresence>
       {isOpen && (
-        <div
+        <motion.div
           role="dialog"
           aria-modal="true"
+          aria-label={!title ? (ariaLabel || 'Dialog') : undefined}
           aria-labelledby={title ? 'modal-dialog-title' : undefined}
           aria-describedby={description ? 'modal-dialog-description' : undefined}
-          className="fixed inset-0 z-50 flex items-center justify-center p-4"
+          initial={shouldReduceMotion ? { opacity: 1 } : { opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={shouldReduceMotion ? { opacity: 0 } : { opacity: 0 }}
+          transition={{ duration: shouldReduceMotion ? 0 : 0.12 }}
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm overflow-y-auto"
+          onClick={(e) => {
+            if (e.target === e.currentTarget) {
+              onClose?.();
+            }
+          }}
         >
-          {/* Backdrop */}
-          <motion.div
-            initial={shouldReduceMotion ? { opacity: 1 } : { opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={shouldReduceMotion ? { opacity: 0 } : { opacity: 0 }}
-            transition={{ duration: shouldReduceMotion ? 0 : 0.12 }}
-            className="fixed inset-0 bg-black/60 backdrop-blur-xs"
-            onClick={onClose}
-            aria-hidden="true"
-          />
-
           {/* Modal Container */}
           <motion.div
             ref={modalRef}
@@ -130,7 +132,7 @@ export default function Modal({
                 : { opacity: 0, scale: 0.98, y: 4 }
             }
             transition={{ duration: shouldReduceMotion ? 0 : 0.15, ease: 'easeOut' }}
-            className={`relative z-10 w-full ${maxWidth} rounded-xl border border-border-subtle bg-surface p-6 shadow-xl outline-none ${className}`}
+            className={`relative w-full ${maxWidth} my-auto rounded-xl border border-border-subtle bg-surface p-6 text-primary shadow-xl outline-none ${className}`}
             onClick={(e) => e.stopPropagation()}
           >
             {title && (
@@ -151,8 +153,14 @@ export default function Modal({
             )}
             {children}
           </motion.div>
-        </div>
+        </motion.div>
       )}
     </AnimatePresence>
   );
+
+  if (typeof document === 'undefined') {
+    return null;
+  }
+
+  return createPortal(modalNode, document.body);
 }

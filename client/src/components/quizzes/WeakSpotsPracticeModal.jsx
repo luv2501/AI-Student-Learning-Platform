@@ -118,6 +118,7 @@ export default function WeakSpotsPracticeModal({
       onClose={handleClose}
       maxWidth="max-w-2xl"
       className="p-6 max-h-[90vh] overflow-y-auto"
+      ariaLabel="Targeted Weak Spots Practice"
     >
       <div className="space-y-4">
         {/* Modal Header */}

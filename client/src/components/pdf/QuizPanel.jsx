@@ -536,6 +536,7 @@ export default function QuizPanel({ document: doc, onGenerated }) {
         onClose={() => setShowHistory(false)}
         maxWidth="max-w-lg"
         className="p-6"
+        ariaLabel="Past Attempts History"
       >
         <div className="space-y-4">
           <div className="flex items-center justify-between border-b border-border-subtle pb-3">

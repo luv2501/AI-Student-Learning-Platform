@@ -1,5 +1,5 @@
 import { Link, NavLink } from 'react-router-dom';
-import { Logo } from '../Navbar.jsx';
+import { Logo } from '../Logo.jsx';
 import ThemeToggle from '../ThemeToggle.jsx';
 import Button from '../ui/Button.jsx';
 

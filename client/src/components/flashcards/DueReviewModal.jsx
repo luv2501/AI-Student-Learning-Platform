@@ -156,6 +156,7 @@ export default function DueReviewModal({ isOpen, onClose, onSessionFinished }) {
       onClose={handleClose}
       maxWidth="max-w-xl"
       className="p-6"
+      ariaLabel="Daily Spaced Repetition Session"
     >
       <div className="space-y-4">
         {/* Header */}

@@ -208,7 +208,8 @@ export default function FocusTimerModal({
       onClose={onClose}
       title=""
       maxWidth="max-w-md"
-      className="p-6 text-center"
+      className="text-center"
+      ariaLabel="Focus Timer"
     >
       <div className="space-y-6">
         {/* Header / Mode Switcher */}

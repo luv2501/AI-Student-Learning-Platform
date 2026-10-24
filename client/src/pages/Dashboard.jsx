@@ -655,6 +655,7 @@ export default function Dashboard() {
       {/* Delete Task Confirmation Modal */}
       <Modal
         isOpen={Boolean(taskToDelete)}
+        ariaLabel="Delete Task"
         onClose={() => setTaskToDelete(null)}
       >
         {taskToDelete && (

@@ -446,6 +446,7 @@ export default function Documents() {
       {/* Safety Confirmation Modal */}
       <Modal
         isOpen={Boolean(docToDelete)}
+        ariaLabel="Delete Document"
         onClose={() => {
           if (!deleting) setDocToDelete(null);
         }}

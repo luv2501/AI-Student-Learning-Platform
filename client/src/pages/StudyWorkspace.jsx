@@ -322,6 +322,7 @@ export default function StudyWorkspace() {
       {/* Delete Confirmation Modal */}
       <Modal
         isOpen={showDeleteModal}
+        ariaLabel="Delete Document"
         onClose={() => {
           if (!deleting) setShowDeleteModal(false);
         }}

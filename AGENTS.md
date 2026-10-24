@@ -214,9 +214,19 @@ When making non-trivial architectural, structural, or dependency decisions, docu
   - Seeded 4 study tasks (2 completed, 2 pending) and an interactive Q&A history thread with page citations.
   - Added `"seed:demo"` scripts to root and server `package.json`.
 - **Alternatives Considered**: Mocking demo data dynamically in the client via mock service workers (rejected because authentic backend persistence, API routes, and database indexing must be exercised for real demos).
-- **Impact**: Idempotent 1-click seeding; zero regressions across all 9 server test suites (353/353 passing); Vite production build passes with `0` errors.
+### [2026-10-24] - Comprehensive Final Audit, Dead-Code Cleanup & Portfolio Hardening (Task 7.3)
+- **Context**: Phase 7 final delivery required a full audit across console logging, dead code, dependency trees, git secrets/exclusions, brand consistency, design token compliance, and modal accessibility.
+- **Decision**: 
+  - **Dead Code & Console Clean-up**: Audited client and server codebases for stray `console.log` statements (0 found). Upgraded silent/warning handler in `AskPanel.jsx` to structured `console.error` exception logging. Pruned legacy dead `Navbar.jsx` component (~160 lines) and extracted a clean standalone `Logo.jsx` component used by all navigation shells (`Sidebar.jsx`, `MobileNav.jsx`, `PublicNav.jsx`, `Layout.jsx`).
+  - **Dependencies & Scripts**: Audited dependencies across root, client, and server; verified 100% of dependencies are actively required; added `"test:streaks"` to `server/package.json`.
+  - **Repository & Secret Hygiene**: Verified zero tracked `.env` files or secret keys in git history. Hardened root `.gitignore` with strict rules for build outputs (`dist/`, `client/dist/`), coverage reports (`coverage/`, `.nyc_output/`, `*.lcov`), uploads, and IDE caches. Verified dummy values in `.env.example` templates.
+  - **Design & Anti-Vibecode Enforcement**: Verified zero emojis and zero em-dashes in client chrome (replaced unicode checkmark `✓` in `Landing.jsx` with Lucide `Check` icon).
+  - **Modal Centering & Accessibility**: Standardized all modal dialogs with `role="dialog"`, `aria-modal="true"`, explicit `ariaLabel` attributes, Escape key dismissal, body scroll locking, and viewport centering via `createPortal(..., document.body)`.
+- **Alternatives Considered**: Retaining obsolete `Navbar.jsx` alongside `Sidebar.jsx` (rejected because dead code creates confusion for open-source contributors and interview code walkthroughs).
+- **Impact**: Clean, hardened repository; `npm run build:client` passes in 429ms with 0 errors; 100% pass rate across all 9 server test suites (353/353 assertions passing).
 
 ---
+
 
 
 

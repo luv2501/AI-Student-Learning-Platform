@@ -202,7 +202,10 @@ export default function Landing() {
                 <div className="space-y-2">
                   <div className="rounded-md border border-border-subtle bg-subtle p-2.5">
                     <p className="text-xs text-primary font-medium">1. Where does the Krebs cycle occur?</p>
-                    <p className="mt-1 font-mono text-[11px] text-success font-medium">✓ Mitochondrial Matrix</p>
+                    <p className="mt-1 flex items-center gap-1 font-mono text-[11px] text-success font-medium">
+                      <Check className="h-3 w-3 stroke-[2.5]" aria-hidden="true" />
+                      <span>Mitochondrial Matrix</span>
+                    </p>
                   </div>
                   <div className="rounded-md border border-border-subtle bg-subtle p-2.5">
                     <p className="text-xs text-primary font-medium">2. Net ATP produced per glucose molecule:</p>
