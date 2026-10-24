@@ -377,6 +377,40 @@
   - [x] Zero em-dashes (all replaced with colons, hyphens, or parentheses).
   - [x] Professional, objective engineering tone free of marketing fluff.
 
+### Task 7.2: Demo Data Seed Script (`server/scripts/seed-demo.js`)
+- [x] Environment Protection:
+  - [x] Checks `process.env.NODE_ENV === 'production'` and exits immediately with code 1 if true.
+- [x] Deterministic Demo User:
+  - [x] Email: `demo@filesense.dev`
+  - [x] Password: `DemoPassword123!` (properly hashed with bcrypt via Mongoose `pre('save')`)
+  - [x] Name: `Demo Student`, Institution: `Imperial College London`
+  - [x] Active Streak: 5 days, Longest Streak: 12 days, `lastActiveDate`: today in client timezone.
+- [x] Documents & Extracted Content (2 Rich Technical Documents):
+  - [x] Document 1: "Distributed Systems and Consensus Protocols"
+    - [x] 3 pages of text covering Raft, Paxos, and Split-Brain mitigation.
+    - [x] Structured study notes: summary, key points, and 3 detailed sections.
+    - [x] 6 realistic flashcards with SuperMemo SM-2 review history in `CardReview` (including 2 cards due today).
+    - [x] 5-question quiz with topic tagging and explanations.
+    - [x] 2 quiz attempts: Attempt 1 (40%) and Attempt 2 (80%), intentionally missing "Raft Leader Election" to populate Knowledge Gaps.
+    - [x] 1 Q&A conversation thread in `AskHistory` with page citation.
+  - [x] Document 2: "Operating Systems: Virtual Memory and Paging"
+    - [x] 2 pages of text covering address translation, TLBs, and page fault handling.
+    - [x] Structured notes and 4 flashcards with active intervals.
+    - [x] 100% passed quiz attempt.
+- [x] Study Sessions & Focus History:
+  - [x] 7 days of `StudySession` records for the demo user (totaling 360 focus minutes, 50 minutes today).
+  - [x] Mixture of `pomodoro` and `free_focus` session types.
+  - [x] Populates complete 7-day focus chart on Dashboard.
+- [x] Study Tasks (Action Items):
+  - [x] 4 realistic tasks with mixed statuses (2 completed, 2 pending) and due dates.
+- [x] Package Scripts & Verification:
+  - [x] Added `"seed:demo": "node server/scripts/seed-demo.js"` to root `package.json`.
+  - [x] Added `"seed:demo": "node scripts/seed-demo.js"` to `server/package.json`.
+  - [x] Clean, readable CLI output summarizing created records and login credentials.
+  - [x] Verified idempotent execution and production guard.
+  - [x] 100% pass rate across all 9 server test suites (353/353 passing).
+
+
 
 
 

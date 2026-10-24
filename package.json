@@ -11,7 +11,8 @@
     "test": "node server/scripts/run-all-tests.js",
     "test:server": "node server/scripts/run-all-tests.js",
     "build": "npm --prefix client run build",
-    "build:client": "npm --prefix client run build"
+    "build:client": "npm --prefix client run build",
+    "seed:demo": "node server/scripts/seed-demo.js"
   },
   "devDependencies": {
     "concurrently": "^10.0.5"

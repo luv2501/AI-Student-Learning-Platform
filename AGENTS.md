@@ -203,6 +203,19 @@ When making non-trivial architectural, structural, or dependency decisions, docu
 - **Alternatives Considered**: Marketing-heavy SaaS landing README with badges and decorative emojis (rejected per Anti-Vibecode rules in `DESIGN.md`).
 - **Impact**: Clean, interview-ready documentation; 100% test pass rate preserved (353/353 assertions across 9 suites); Vite production build passes with `0` errors.
 
+### [2026-10-24] - Deterministic Demo Data Seed Script (Task 7.2)
+- **Context**: Prospective reviewers, recruiters, and developers running the application locally need instant access to a realistic, high-utility demo account without manually creating accounts, uploading PDFs, and grading flashcards.
+- **Decision**: 
+  - Created `server/scripts/seed-demo.js` with strict environment protection (`process.env.NODE_ENV === 'production'` aborts immediately with code 1).
+  - Seeded deterministic user `demo@filesense.dev` (`DemoPassword123!`) with an active 5-day streak and 12-day longest milestone evaluated in the client's local timezone.
+  - Seeded 2 rich technical documents with page chunks, structured revision notes, flashcards with SM-2 history (with 2 cards due today), and quiz questions.
+  - Generated realistic attempt history with score progression (40% -> 80% and 100%) establishing "Raft Leader Election" (25% accuracy) as an active weak spot.
+  - Seeded 7 days of focus sessions (360 total minutes, 50 minutes today) populating the 7-day focus chart.
+  - Seeded 4 study tasks (2 completed, 2 pending) and an interactive Q&A history thread with page citations.
+  - Added `"seed:demo"` scripts to root and server `package.json`.
+- **Alternatives Considered**: Mocking demo data dynamically in the client via mock service workers (rejected because authentic backend persistence, API routes, and database indexing must be exercised for real demos).
+- **Impact**: Idempotent 1-click seeding; zero regressions across all 9 server test suites (353/353 passing); Vite production build passes with `0` errors.
+
 ---
 
 

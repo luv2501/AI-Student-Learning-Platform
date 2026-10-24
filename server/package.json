@@ -18,7 +18,8 @@
     "test:quiz": "node scripts/test-quiz-history.js",
     "test:streaming": "node scripts/test-streaming.js",
     "check:db": "node scripts/check-db.js",
-    "check:ai": "node scripts/check-ai.js"
+    "check:ai": "node scripts/check-ai.js",
+    "seed:demo": "node scripts/seed-demo.js"
   },
   "dependencies": {
     "bcryptjs": "^3.0.3",
