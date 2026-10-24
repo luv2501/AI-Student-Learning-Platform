@@ -9,6 +9,7 @@ import {
   getCardState,
   DEFAULT_EASE_FACTOR,
 } from '../utils/sm2.js';
+import { recordUserActivity } from '../utils/streak.js';
 
 /**
  * POST /api/flashcards/review
@@ -76,6 +77,9 @@ export async function submitReview(req, res) {
       setDefaultsOnInsert: true,
     }
   );
+
+  const tz = req.headers['x-user-timezone'] || req.headers['x-timezone'] || 'UTC';
+  await recordUserActivity(req.user, tz).catch(() => {});
 
   res.json({
     review,

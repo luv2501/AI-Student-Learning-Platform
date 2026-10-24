@@ -12,6 +12,10 @@ import dotenv from 'dotenv';
 dotenv.config();
 dotenv.config({ path: fileURLToPath(new URL('../.env', import.meta.url)) });
 
+if (!process.env.AI_API_KEY) {
+  process.env.AI_API_KEY = 'mock_ci_streaming_key';
+}
+
 import { MongoMemoryServer } from 'mongodb-memory-server';
 import mongoose from 'mongoose';
 import jwt from 'jsonwebtoken';

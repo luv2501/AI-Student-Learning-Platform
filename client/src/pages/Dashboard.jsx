@@ -15,6 +15,8 @@ import {
   AlertTriangle,
   Target,
   Sparkles,
+  Flame,
+  Timer,
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext.jsx';
 import api, { apiErrorMessage } from '../lib/api.js';
@@ -33,6 +35,8 @@ import TaskItem from '../components/tasks/TaskItem.jsx';
 import DueReviewModal from '../components/flashcards/DueReviewModal.jsx';
 import ScoreTrendChart from '../components/quizzes/ScoreTrendChart.jsx';
 import WeakSpotsPracticeModal from '../components/quizzes/WeakSpotsPracticeModal.jsx';
+import FocusTimerModal from '../components/timer/FocusTimerModal.jsx';
+import FocusActivityCard from '../components/timer/FocusActivityCard.jsx';
 
 function greeting() {
   const hour = new Date().getHours();
@@ -72,6 +76,8 @@ export default function Dashboard() {
   const [showDueModal, setShowDueModal] = useState(false);
   const [quizSummary, setQuizSummary] = useState(null);
   const [showWeakSpotsModal, setShowWeakSpotsModal] = useState(false);
+  const [timerStats, setTimerStats] = useState(null);
+  const [showTimerModal, setShowTimerModal] = useState(false);
   const [filter, setFilter] = useState('all');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -85,12 +91,13 @@ export default function Dashboard() {
   const load = useCallback(async () => {
     setError('');
     try {
-      const [taskRes, statsRes, docRes, dueRes, quizRes] = await Promise.all([
+      const [taskRes, statsRes, docRes, dueRes, quizRes, timerRes] = await Promise.all([
         api.get('/tasks'),
         api.get('/tasks/stats'),
         api.get('/documents'),
         api.get('/flashcards/due-count').catch(() => ({ data: { dueCount: 0 } })),
         api.get('/quizzes/history/summary').catch(() => ({ data: null })),
+        api.get('/timer/stats').catch(() => ({ data: null })),
       ]);
       setTasks(taskRes.data.tasks);
       setStats(statsRes.data.stats);
@@ -98,6 +105,9 @@ export default function Dashboard() {
       setDueFlashcardsCount(dueRes.data?.dueCount ?? 0);
       if (quizRes.data) {
         setQuizSummary(quizRes.data);
+      }
+      if (timerRes.data) {
+        setTimerStats(timerRes.data);
       }
     } catch (err) {
       const msg = apiErrorMessage(err);
@@ -224,6 +234,11 @@ export default function Dashboard() {
         <div>
           <div className="inline-flex items-center gap-2 text-xs font-mono text-muted uppercase tracking-wider">
             <span>{todayFormatted}</span>
+            <span className="text-muted/40">·</span>
+            <span className="inline-flex items-center gap-1.5 font-mono text-xs font-medium text-accent">
+              <Flame className="h-3.5 w-3.5 fill-accent/20 stroke-accent" aria-hidden="true" />
+              <span>{timerStats?.streak?.current ?? 0}-day streak</span>
+            </span>
           </div>
           <h1 className="mt-1 text-2xl font-semibold tracking-tight text-primary sm:text-3xl">
             {greeting()}, {firstName}
@@ -242,6 +257,15 @@ export default function Dashboard() {
         </div>
 
         <div className="flex flex-wrap items-center gap-2.5">
+          <Button
+            onClick={() => setShowTimerModal(true)}
+            variant="secondary"
+            size="sm"
+            className="gap-1.5"
+          >
+            <Timer className="h-4 w-4" aria-hidden="true" />
+            <span>Focus Timer</span>
+          </Button>
           {dueFlashcardsCount > 0 && (
             <Button
               onClick={() => setShowDueModal(true)}
@@ -345,80 +369,68 @@ export default function Dashboard() {
         />
       </div>
 
-      {/* Learning Analytics: Score Over Time & Knowledge Gaps */}
-      <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
-        <div className="lg:col-span-2">
-          <ScoreTrendChart
-            scoreTrend={quizSummary?.scoreTrend || []}
-            averageScore={quizSummary?.averageScore || 0}
-            totalAttempts={quizSummary?.totalAttempts || 0}
-            bestScore={quizSummary?.bestScore || 0}
-          />
-        </div>
+      {/* Learning Analytics: Score Trend & Focus Activity */}
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+        <ScoreTrendChart
+          scoreTrend={quizSummary?.scoreTrend || []}
+          averageScore={quizSummary?.averageScore || 0}
+          totalAttempts={quizSummary?.totalAttempts || 0}
+          bestScore={quizSummary?.bestScore || 0}
+        />
 
-        <div className="lg:col-span-1">
-          <Card padding="none" className="h-full flex flex-col justify-between">
+        <FocusActivityCard
+          streak={timerStats?.streak}
+          todayMinutes={timerStats?.todayMinutes || 0}
+          totalMinutes={timerStats?.totalMinutes || 0}
+          weeklyBreakdown={timerStats?.weeklyBreakdown || []}
+          onOpenTimer={() => setShowTimerModal(true)}
+        />
+      </div>
+
+      {/* Targeted Knowledge Gaps Remediator */}
+      {quizSummary?.weakSpots?.length > 0 && (
+        <Card padding="none">
+          <div className="flex flex-col gap-2 border-b border-border-subtle p-4 pb-3 sm:flex-row sm:items-center sm:justify-between">
             <div>
-              <CardHeader
-                title="Knowledge Gaps"
-                subtitle={
-                  quizSummary?.weakSpots?.length > 0
-                    ? `${quizSummary.weakSpots.length} topic${quizSummary.weakSpots.length === 1 ? '' : 's'} scoring under 60%`
-                    : 'Accuracy across recent quizzes'
-                }
-                className="border-b border-border-subtle p-4 pb-3"
-              />
-
-              <div className="p-4">
-                {quizSummary?.weakSpots?.length === 0 || !quizSummary?.weakSpots ? (
-                  <div className="py-6 text-center">
-                    <Badge tone="emerald">No weak spots detected</Badge>
-                    <p className="mt-2 text-xs text-secondary leading-relaxed">
-                      All topics are scoring above 60% accuracy. Excellent recall consistency across your quizzes.
-                    </p>
-                  </div>
-                ) : (
-                  <div className="space-y-2.5">
-                    {quizSummary.weakSpots.slice(0, 4).map((ws) => (
-                      <div
-                        key={ws.topic}
-                        className="flex items-center justify-between gap-2 rounded-lg border border-border-subtle bg-subtle/40 p-2.5"
-                      >
-                        <div className="min-w-0 flex-1">
-                          <p className="truncate text-xs font-semibold text-primary">
-                            {ws.topic}
-                          </p>
-                          <p className="font-mono text-[10px] text-muted">
-                            {ws.missedCount} missed of {ws.totalQuestions} questions
-                          </p>
-                        </div>
-                        <Badge tone="rose" className="font-mono text-[11px] shrink-0">
-                          {ws.accuracy}% acc
-                        </Badge>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
+              <h2 className="text-sm font-semibold tracking-tight text-primary">
+                Knowledge Gaps Detected
+              </h2>
+              <p className="text-xs text-secondary">
+                {quizSummary.weakSpots.length} topic{quizSummary.weakSpots.length === 1 ? '' : 's'} scoring under 60% across recent quizzes
+              </p>
             </div>
 
-            {quizSummary?.weakSpots?.length > 0 && (
-              <div className="border-t border-border-subtle p-3.5 bg-subtle/20">
-                <Button
-                  variant="secondary"
-                  size="sm"
-                  fullWidth
-                  onClick={() => setShowWeakSpotsModal(true)}
-                  className="gap-1.5 text-accent border-accent/30 hover:bg-accent-subtle/30"
-                >
-                  <Sparkles className="h-3.5 w-3.5" aria-hidden="true" />
-                  <span>Practice weak spots</span>
-                </Button>
+            <Button
+              variant="secondary"
+              size="sm"
+              onClick={() => setShowWeakSpotsModal(true)}
+              className="gap-1.5 text-accent border-accent/30 hover:bg-accent-subtle/30 shrink-0"
+            >
+              <Sparkles className="h-3.5 w-3.5" aria-hidden="true" />
+              <span>Practice weak spots</span>
+            </Button>
+          </div>
+
+          <div className="grid grid-cols-1 gap-2.5 p-4 sm:grid-cols-2 lg:grid-cols-4">
+            {quizSummary.weakSpots.slice(0, 4).map((ws) => (
+              <div
+                key={ws.topic}
+                className="flex items-center justify-between gap-2 rounded-lg border border-border-subtle bg-subtle/40 p-2.5"
+              >
+                <div className="min-w-0 flex-1">
+                  <p className="truncate text-xs font-semibold text-primary">{ws.topic}</p>
+                  <p className="font-mono text-[10px] text-muted">
+                    {ws.missedCount} missed of {ws.totalQuestions} questions
+                  </p>
+                </div>
+                <Badge tone="rose" className="font-mono text-[11px] shrink-0">
+                  {ws.accuracy}% acc
+                </Badge>
               </div>
-            )}
-          </Card>
-        </div>
-      </div>
+            ))}
+          </div>
+        </Card>
+      )}
 
       {/* Inline Task Form */}
       {showForm && (
@@ -714,6 +726,15 @@ export default function Dashboard() {
         onClose={() => setShowWeakSpotsModal(false)}
         weakSpots={quizSummary?.weakSpots || []}
         onFinished={load}
+      />
+
+      {/* Focus Timer Modal */}
+      <FocusTimerModal
+        isOpen={showTimerModal}
+        onClose={() => setShowTimerModal(false)}
+        documents={documents}
+        currentStreak={timerStats?.streak?.current ?? 0}
+        onSessionComplete={load}
       />
     </div>
   );

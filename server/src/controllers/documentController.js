@@ -3,6 +3,7 @@ import Document from '../models/Document.js';
 import AskHistory from '../models/AskHistory.js';
 import CardReview from '../models/CardReview.js';
 import QuizAttempt from '../models/QuizAttempt.js';
+import StudySession from '../models/StudySession.js';
 import apiError from '../utils/apiError.js';
 import { extractPdfText } from '../services/pdfService.js';
 import {
@@ -110,6 +111,7 @@ export async function deleteDocument(req, res) {
     AskHistory.deleteOne({ documentId: doc._id }),
     CardReview.deleteMany({ documentId: doc._id }),
     QuizAttempt.deleteMany({ documentId: doc._id }),
+    StudySession.deleteMany({ documentId: doc._id }),
   ]);
   res.json({ message: 'Document deleted', id: doc._id });
 }
@@ -238,7 +240,8 @@ export async function streamNotesRoute(req, res) {
       doc.extractedText,
       (chunk) => {
         if (!disconnected) {
-          sendSSEEvent(res, 'token', { text: chunk });
+          const text = typeof chunk === 'string' ? chunk : (chunk?.text ?? '');
+          sendSSEEvent(res, 'token', { text });
         }
       },
       { signal: abortController.signal }
@@ -302,7 +305,8 @@ export async function streamAskRoute(req, res) {
       [],
       (token) => {
         if (!disconnected) {
-          sendSSEEvent(res, 'token', { text: token });
+          const text = typeof token === 'string' ? token : (token?.text ?? '');
+          sendSSEEvent(res, 'token', { text });
         }
       },
       { signal: abortController.signal, pages: doc.pages }

@@ -1,5 +1,6 @@
 import Task from '../models/Task.js';
 import apiError from '../utils/apiError.js';
+import { recordUserActivity } from '../utils/streak.js';
 
 /** Incomplete first, then earliest due date (undated last), then newest. */
 function byUrgency(a, b) {
@@ -146,6 +147,10 @@ export async function updateTask(req, res) {
   if (completed !== undefined) setCompleted(task, completed);
 
   await task.save();
+  if (task.completed) {
+    const tz = req.headers['x-user-timezone'] || req.headers['x-timezone'] || 'UTC';
+    await recordUserActivity(req.user, tz).catch(() => {});
+  }
   res.json({ task });
 }
 
@@ -156,6 +161,11 @@ export async function toggleTask(req, res) {
 
   setCompleted(task, !task.completed);
   await task.save();
+
+  if (task.completed) {
+    const tz = req.headers['x-user-timezone'] || req.headers['x-timezone'] || 'UTC';
+    await recordUserActivity(req.user, tz).catch(() => {});
+  }
 
   res.json({ task });
 }

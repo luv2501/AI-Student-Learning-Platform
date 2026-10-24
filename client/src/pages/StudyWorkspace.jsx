@@ -11,6 +11,7 @@ import {
   Layers,
   HelpCircle,
   MessageSquare,
+  Timer,
 } from 'lucide-react';
 import api, { apiErrorMessage } from '../lib/api.js';
 import Card from '../components/ui/Card.jsx';
@@ -26,6 +27,7 @@ import NotesPanel from '../components/pdf/NotesPanel.jsx';
 import FlashcardsPanel from '../components/pdf/FlashcardsPanel.jsx';
 import QuizPanel from '../components/pdf/QuizPanel.jsx';
 import AskPanel from '../components/pdf/AskPanel.jsx';
+import FocusTimerModal from '../components/timer/FocusTimerModal.jsx';
 
 const PANEL_ICONS = {
   notes: StickyNote,
@@ -55,6 +57,7 @@ export default function StudyWorkspace() {
   const [dismissedTruncation, setDismissedTruncation] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [showTimerModal, setShowTimerModal] = useState(false);
 
   const requested = params.get('tab');
   const tab = tabKeys.includes(requested) ? requested : 'notes';
@@ -186,15 +189,27 @@ export default function StudyWorkspace() {
             Document Library
           </Link>
 
-          <button
-            type="button"
-            onClick={() => setShowDeleteModal(true)}
-            className="inline-flex cursor-pointer items-center gap-1.5 rounded-md px-2.5 py-1.5 text-xs font-medium text-muted transition-colors hover:bg-danger-subtle hover:text-danger focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-danger"
-            aria-label={`Delete ${docTitle}`}
-          >
-            <Trash2 className="h-3.5 w-3.5 stroke-[1.75]" aria-hidden="true" />
-            <span className="hidden sm:inline">Delete document</span>
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={() => setShowTimerModal(true)}
+              className="inline-flex cursor-pointer items-center gap-1.5 rounded-md px-2.5 py-1.5 text-xs font-medium text-secondary transition-colors hover:bg-subtle hover:text-primary focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-accent"
+              aria-label="Launch Focus Timer for this document"
+            >
+              <Timer className="h-3.5 w-3.5 stroke-[1.75]" aria-hidden="true" />
+              <span>Focus timer</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setShowDeleteModal(true)}
+              className="inline-flex cursor-pointer items-center gap-1.5 rounded-md px-2.5 py-1.5 text-xs font-medium text-muted transition-colors hover:bg-danger-subtle hover:text-danger focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-danger"
+              aria-label={`Delete ${docTitle}`}
+            >
+              <Trash2 className="h-3.5 w-3.5 stroke-[1.75]" aria-hidden="true" />
+              <span className="hidden sm:inline">Delete document</span>
+            </button>
+          </div>
         </div>
 
         {/* Title & metadata */}
@@ -348,6 +363,16 @@ export default function StudyWorkspace() {
           </Button>
         </div>
       </Modal>
+
+      {/* Focus Timer Modal linked to current document */}
+      {doc && (
+        <FocusTimerModal
+          isOpen={showTimerModal}
+          onClose={() => setShowTimerModal(false)}
+          documents={library.length ? library : [doc]}
+          defaultDocumentId={doc._id}
+        />
+      )}
     </div>
   );
 }

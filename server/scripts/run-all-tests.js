@@ -23,6 +23,7 @@ const SUITES = [
   { file: 'test-spaced-repetition.js', label: 'SM-2 Flashcard Engine' },
   { file: 'test-quiz-history.js', label: 'Quiz History & Weak Spots' },
   { file: 'test-streaming.js', label: 'SSE AI Streaming & Abort Signals' },
+  { file: 'test-streaks-timer.js', label: 'Streaks & Focus Timer Engine' },
 ];
 
 function runSuite(suite) {
@@ -36,6 +37,7 @@ function runSuite(suite) {
         ...process.env,
         NODE_ENV: process.env.NODE_ENV || 'test',
         JWT_SECRET: process.env.JWT_SECRET || 'ci-test-secret-key-at-least-32-chars-long',
+        AI_API_KEY: process.env.AI_API_KEY || 'mock_ci_streaming_key',
       },
       stdio: ['ignore', 'pipe', 'pipe'],
     });

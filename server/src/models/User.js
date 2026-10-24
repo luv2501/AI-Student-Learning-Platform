@@ -24,6 +24,9 @@ const userSchema = new mongoose.Schema(
       select: false, // never returned by queries unless asked for explicitly
     },
     institution: { type: String, trim: true, default: '' },
+    streakCount: { type: Number, default: 0 },
+    longestStreak: { type: Number, default: 0 },
+    lastActiveDate: { type: String, default: null },
   },
   { timestamps: true }
 );
@@ -45,6 +48,9 @@ userSchema.methods.toPublic = function toPublic() {
     name: this.name,
     email: this.email,
     institution: this.institution,
+    streakCount: this.streakCount ?? 0,
+    longestStreak: this.longestStreak ?? 0,
+    lastActiveDate: this.lastActiveDate ?? null,
     createdAt: this.createdAt,
   };
 };

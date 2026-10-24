@@ -308,6 +308,37 @@
   - [x] Added CI simulated mock provider fallback in `server/scripts/test-ai.js` when `AI_API_KEY` is not configured in external runner environments.
   - [x] Verified local execution of `npm test` (298/298 tests passing) and `npm run build:client` (exit code 0).
 
+### Task 5.6: Streaks and Focus Timer
+- [x] Data Architecture & Persistence:
+  - [x] Created `server/src/models/StudySession.js` (`userId`, `documentId`, `durationMinutes`, `type`, `completedAt` with compound index on `{ userId: 1, completedAt: -1 }`).
+  - [x] Updated `server/src/models/User.js` with `streakCount`, `longestStreak`, and `lastActiveDate` fields exposed in `toPublic()`.
+  - [x] Added cascade deletion of `StudySession` records referencing deleted documents in `server/src/controllers/documentController.js`.
+- [x] Timezone-Aware Streak Logic & Timer Endpoints:
+  - [x] Created `server/src/utils/streak.js`:
+    - [x] `getDateString(date, timezone)` using `Intl.DateTimeFormat('en-CA', { timeZone })`.
+    - [x] `getYesterdayString(dateString)` and `getDaysAgoString(dateString, daysAgo)` using UTC date arithmetic.
+    - [x] `calculateStreak(user, timezone, todayStringOverride)` (same-day maintain, consecutive day increment, skipped day reset to 1).
+    - [x] `getActiveStreak(user, timezone, todayStringOverride)` returning alive streak count for today or yesterday.
+    - [x] `getWeeklyBreakdownDays(todayString)` generating 7-day array with day abbreviations.
+  - [x] Implemented `POST /api/timer/session` supporting Pomodoro/Break types, client timezone extraction, document association, and automatic streak advancing.
+  - [x] Implemented `GET /api/timer/stats` returning active streak, today focus minutes, total focus minutes, and 7-day calendar breakdown.
+  - [x] Hooked streak updates into qualified study activities (task completion, flashcard SM-2 review, quiz attempt submission).
+- [x] Frontend: Focus Timer Modal & Streak Dashboard UI:
+  - [x] Created `client/src/components/timer/FocusTimerModal.jsx` with Pomodoro (25m), Short Break (5m), Long Break (15m) modes, minimal circular SVG progress, Geist Mono digital readout, accessible ARIA live region, active `document.title` countdown updating, and auto-logging upon completion with Sonner toasts.
+  - [x] Created `client/src/components/timer/FocusActivityCard.jsx` displaying today's focus minutes, total time, best streak, and interactive 7-day daily activity bar chart with hover/focus tooltips.
+  - [x] Updated `client/src/pages/Dashboard.jsx`:
+    - [x] Added Lucide `Flame` streak badge to Cockpit header in Geist Mono.
+    - [x] Added "Focus Timer" launcher button to quick actions row.
+    - [x] Integrated `FocusActivityCard` alongside `ScoreTrendChart` in a balanced 2-column layout.
+    - [x] Integrated wide responsive `Knowledge Gaps` remediation section when weak spots exist.
+  - [x] Added Focus Timer quick launch directly inside `client/src/pages/StudyWorkspace.jsx` header with document auto-linking.
+- [x] Testing & Verification:
+  - [x] Created `server/scripts/test-streaks-timer.js` covering model validations, compound indexes, timezone boundaries, API endpoints, multi-user isolation, and cascade cleanup (55/55 passing).
+  - [x] Added `test-streaks-timer.js` to `server/scripts/run-all-tests.js` (raising total test suites to 9).
+  - [x] Verified `npm test` locally: all 9 test suites pass 100% (353/353 assertions passed in 17.5s).
+  - [x] Verified `npm run build:client`: Vite production bundle compiles with 0 errors.
+
+
 
 
 

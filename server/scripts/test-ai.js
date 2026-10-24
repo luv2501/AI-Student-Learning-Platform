@@ -53,8 +53,8 @@ async function call(method, path, { body, token } = {}) {
   return { status: res.status, data: await res.json().catch(() => ({})) };
 }
 
-if (!process.env.AI_API_KEY) {
-  console.log('\nNotice: AI_API_KEY is not set in environment. Running with simulated AI provider fixtures for CI.\n');
+if (!process.env.AI_API_KEY || process.env.AI_API_KEY.startsWith('mock_')) {
+  console.log('\nNotice: AI_API_KEY is not set or is a mock fixture key. Running with simulated AI provider fixtures for CI.\n');
   process.env.AI_API_KEY = 'mock_ci_ai_key';
   const origFetch = globalThis.fetch;
   globalThis.fetch = async function (url, opts) {

@@ -3,6 +3,7 @@ import Document from '../models/Document.js';
 import QuizAttempt from '../models/QuizAttempt.js';
 import apiError from '../utils/apiError.js';
 import { generateWeakSpotsQuiz } from '../services/aiService.js';
+import { recordUserActivity } from '../utils/streak.js';
 
 /**
  * Derives weak spots from an array of QuizAttempt documents or plain objects.
@@ -122,6 +123,9 @@ export async function submitQuizAttempt(req, res) {
   }).lean();
 
   const weakSpots = calculateWeakSpots(docAttempts);
+
+  const tz = req.headers['x-user-timezone'] || req.headers['x-timezone'] || 'UTC';
+  await recordUserActivity(req.user, tz).catch(() => {});
 
   res.status(201).json({
     attempt,

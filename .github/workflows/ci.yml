@@ -41,6 +41,7 @@ jobs:
           NODE_ENV: test
           JWT_SECRET: ci-test-secret-key-at-least-32-chars-long
           PORT: 5001
+          AI_API_KEY: mock_ci_key_for_test_suites
         run: |
           node server/scripts/run-all-tests.js
 
