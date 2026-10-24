@@ -193,6 +193,16 @@ When making non-trivial architectural, structural, or dependency decisions, docu
 - **Alternatives Considered**: Requiring live Groq API secret in GitHub repository secrets (rejected because public PRs and forks without secrets would fail CI builds).
 - **Impact**: Zero CI flakiness — all 9 test suites pass 100% (353/353 tests passing); Vite build verified with `0` errors.
 
+### [2026-10-24] - Portfolio README Rewrite & Engineering Showcase (Task 7.1)
+- **Context**: The existing README was fragmented and lacked technical depth for prospective engineering interviewers and open-source contributors. Required a comprehensive portfolio rewrite adhering strictly to `DESIGN.md` (zero emojis, zero em-dashes, Public Sans + Geist Mono typography, and high-utility editorial minimalism).
+- **Decision**: 
+  - Restructured `README.md` into 8 rigorous technical sections: Header & Identity with verified badges, Problem/Solution Overview, Feature Highlights with screenshot references (`docs/screenshots/`), High-Level System Architecture (Mermaid flowchart), Request Flow & Lifecycle (Mermaid sequence diagram), Tech Stack and Architectural Justifications table, 5 Engineering Deep-Dives for technical interviews, and complete Setup/Testing/API documentation.
+  - Authored in-depth technical deep-dives on: (1) PDF Stream Chunking & Text Extraction Heuristics, (2) Real-Time SSE Token Streaming with Upstream Disconnect Cancellation via `AbortController`, (3) SuperMemo SM-2 Interval Calculations & Deterministic Card Hashing via SHA-256, (4) Timezone-Aware Streak Continuity across Day Boundaries via `Intl.DateTimeFormat`, and (5) Knowledge Gap Analysis Algorithm with accuracy thresholding.
+  - Eliminated 100% of emojis and em-dashes across all documentation chrome.
+  - Created `docs/screenshots/.gitkeep` directory.
+- **Alternatives Considered**: Marketing-heavy SaaS landing README with badges and decorative emojis (rejected per Anti-Vibecode rules in `DESIGN.md`).
+- **Impact**: Clean, interview-ready documentation; 100% test pass rate preserved (353/353 assertions across 9 suites); Vite production build passes with `0` errors.
+
 ---
 
 

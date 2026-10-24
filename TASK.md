@@ -338,6 +338,46 @@
   - [x] Verified `npm test` locally: all 9 test suites pass 100% (353/353 assertions passed in 17.5s).
   - [x] Verified `npm run build:client`: Vite production bundle compiles with 0 errors.
 
+---
+
+## Phase 7: Polish & Documentation
+
+### Task 7.1: Portfolio README Rewrite
+- [x] Header & Identity:
+  - [x] Official product name (`FileSense: Document Intelligence and Active Recall Engine`).
+  - [x] Badges for CI workflow status, Node.js (>=20.x), and MIT License.
+  - [x] One-line executive pitch detailing core problems and technical solutions.
+- [x] Feature Highlights & Visual Showcase:
+  - [x] Structured breakdown of 5 core features with clean screenshot paths in `docs/screenshots/`:
+    - [x] `dashboard.png` (Cockpit, 7-day focus visualizer, streaks, score trends).
+    - [x] `workspace-stream.png` (Real-time SSE token streaming, page grounding citations).
+    - [x] `flashcards-sm2.png` (SuperMemo SM-2 spaced repetition study interface).
+    - [x] `quiz-weakspots.png` (Knowledge gaps detection, gap practice modal).
+    - [x] `focus-timer.png` (Pomodoro focus timer with audio cues).
+  - [x] Created `docs/screenshots/.gitkeep` directory.
+- [x] Architecture & Request Flow Diagrams:
+  - [x] Mermaid Flowchart detailing client, API gateway, controllers, persistence, and external LLM streaming.
+  - [x] Mermaid Sequence Diagram detailing PDF ingestion, SSE token stream lifecycle, and client abort signal handling.
+- [x] Tech Stack & Engineering Decisions:
+  - [x] Markdown table outlining technology choices and architectural justifications (SSE vs WebSockets, zero-dependency SVG vs heavy chart libraries, In-Memory Mongo for 100% isolated CI testing).
+- [x] Engineering Deep-Dives for Technical Interviews:
+  - [x] PDF Stream Chunking & Text Extraction Heuristics (`pdfService.js` and `aiService.js`).
+  - [x] Real-Time SSE Token Streaming with Upstream Disconnect Cancellation (`AbortController` & `req.on('close')`).
+  - [x] SuperMemo SM-2 Interval Calculations & Deterministic Card Hashing (SHA-256 for persistent review progress across regenerations).
+  - [x] Timezone-Aware Streak Continuity across Day Boundaries (`streak.js` with `Intl.DateTimeFormat` local date arithmetic).
+  - [x] Knowledge Gap Analysis Algorithm (Missed frequency + < 60% accuracy thresholding with on-demand remediation).
+- [x] Setup, Configuration & Quality Assurance:
+  - [x] Complete REST API endpoints reference table.
+  - [x] Step-by-step installation and local development instructions.
+  - [x] Sanitized environment variables table (names, descriptions, defaults, no secrets).
+  - [x] Unified test runner documentation (`npm test` verifying 9 suites / 353 assertions).
+  - [x] Verified production client build (`npm run build:client`).
+- [x] Strict Anti-Vibecode Enforcement:
+  - [x] Zero emojis in document chrome or copy.
+  - [x] Zero em-dashes (all replaced with colons, hyphens, or parentheses).
+  - [x] Professional, objective engineering tone free of marketing fluff.
+
+
 
 
 
