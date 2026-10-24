@@ -1,5 +1,7 @@
 # FileSense — Understand Every Document
 
+[![CI](https://github.com/luv2501/AI-Student-Learning-Platform/actions/workflows/ci.yml/badge.svg)](https://github.com/luv2501/AI-Student-Learning-Platform/actions/workflows/ci.yml)
+
 An AI powered document intelligence workspace: turn lecture PDFs and documents into summaries,
 flashcards, quizzes, and answers, understand every document, and track daily progress.
 
@@ -66,6 +68,7 @@ The AI layer is provider-agnostic and interfaces with standard OpenAI-compatible
 | GET    | /api/documents/:id | yes  | One PDF (with cached AI output) |
 | DELETE | /api/documents/:id | yes  | Delete PDF + file on disk      |
 | POST   | /api/documents/:id/notes | yes | AI study notes (`?refresh=true` to regenerate) |
+| GET    | /api/documents/:id/notes/stream | yes | AI study notes Server-Sent Events stream (`?refresh=true`) |
 | POST   | /api/documents/:id/flashcards | yes | AI flashcards           |
 | GET    | /api/documents/:id/flashcards/reviews | yes | Get user review state for document flashcards |
 | POST   | /api/flashcards/review | yes | Submit SM-2 recall rating (1: Again, 2: Hard, 3: Good, 4: Easy) |
@@ -78,6 +81,7 @@ The AI layer is provider-agnostic and interfaces with standard OpenAI-compatible
 | POST   | /api/ai/quiz/weak-spots | yes | Generate 5-question targeted practice quiz (alias: `/api/quizzes/weak-spots`) |
 | GET    | /api/quizzes/history/summary | yes | Dashboard summary metrics (score trend, average, weak spots) |
 | POST   | /api/documents/:id/ask  | yes | Ask question about PDF with page citations (alias: `/api/ai/ask/:id`) |
+| POST   | /api/documents/:id/ask/stream | yes | Ask question with progressive SSE token streaming & citations |
 | GET    | /api/documents/:id/ask/history | yes | Get stored conversation history (alias: `/api/ai/ask/:id/history`) |
 | DELETE | /api/documents/:id/ask/history | yes | Clear conversation history (alias: `/api/ai/ask/:id/history`) |
 
@@ -105,18 +109,32 @@ npm run dev                  # server on :5000 and client on :5173
 
 Open http://localhost:5173. The landing page shows API and database status.
 
-## Tests
+## Tests & Continuous Integration
+
+FileSense includes an automated CI pipeline powered by GitHub Actions (`.github/workflows/ci.yml`) that verifies all server test suites and production client builds on every push and pull request.
+
+### Run All Tests Locally
 
 ```bash
-npm --prefix server run test:api        # auth + profile
-npm --prefix server run test:tasks      # tasks CRUD + ownership
-npm --prefix server run test:documents  # PDF upload, extraction, ownership
-npm --prefix server run test:ai         # AI service & prompt formatting
-npm --prefix server run test:citations  # Citations & ask history persistence
-npm --prefix server run test:sm2        # Spaced repetition (SM-2) engine
-npm --prefix server run test:quiz       # Quiz history & weak spots detection
-npm --prefix server run check:db        # redacted MongoDB connection check
+npm test                     # runs all 8 test suites sequentially with summary report
+npm run build:client         # verifies Vite production client build
 ```
-All tests boot an in-memory MongoDB; no Atlas or external AI connection needed.
+
+### Individual Test Suites
+
+```bash
+npm --prefix server run test:api         # auth, health, profile & security
+npm --prefix server run test:tasks       # tasks CRUD, filters, timezones & stats
+npm --prefix server run test:documents   # PDF upload, extraction & ownership
+npm --prefix server run test:ai          # AI service, chunking & generation
+npm --prefix server run test:citations   # citations & ask history persistence
+npm --prefix server run test:sm2         # spaced repetition (SM-2) engine
+npm --prefix server run test:quiz        # quiz history & weak spots detection
+npm --prefix server run test:streaming   # SSE streaming, token events & abort signals
+npm --prefix server run check:db         # redacted MongoDB connection check
+```
+
+All server tests boot an in-memory MongoDB via `mongodb-memory-server` and run deterministically in CI with zero external database dependencies.
+
 
 

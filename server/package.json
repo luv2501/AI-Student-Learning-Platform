@@ -8,6 +8,7 @@
   "scripts": {
     "start": "node src/server.js",
     "dev": "node --watch src/server.js",
+    "test": "node scripts/run-all-tests.js",
     "test:api": "node scripts/test-api.js",
     "test:tasks": "node scripts/test-tasks.js",
     "test:documents": "node scripts/test-documents.js",
@@ -15,6 +16,7 @@
     "test:citations": "node scripts/test-citations.js",
     "test:sm2": "node scripts/test-spaced-repetition.js",
     "test:quiz": "node scripts/test-quiz-history.js",
+    "test:streaming": "node scripts/test-streaming.js",
     "check:db": "node scripts/check-db.js",
     "check:ai": "node scripts/check-ai.js"
   },

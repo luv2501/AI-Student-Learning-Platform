@@ -154,10 +154,21 @@ When making non-trivial architectural, structural, or dependency decisions, docu
   - Created `useAiStream.js` hook in `client/src/hooks/` with `ReadableStream` reader and active abort controls.
   - Upgraded `NotesPanel.jsx` with real-time progressive stream preview, Lucide `Square` "Stop generating" button, smooth auto-scroll, and cached notes fallback.
   - Upgraded `AskPanel.jsx` with progressive real-time message bubble, Lucide `Square` "Stop" button, and smooth `animate-rise` citation reveal upon stream finish.
-- **Alternatives Considered**: WebSockets (rejected as overly heavy stateful protocol for unidirectional AI text generation where SSE is native, HTTP/2-friendly, and lightweight). Polling partial results (rejected due to excessive network overhead and high latency).
 - **Impact**: Zero regressions — all 8 server test suites pass 100% (`test-api.js` 27/27, `test-tasks.js` 42/42, `test-documents.js` 40/40, `test-ai.js` 23/23, `test-citations.js` 40/40, `test-spaced-repetition.js` 46/46, `test-quiz-history.js` 38/38, `test-streaming.js` 42/42 — total 298/298 passing); Vite production build exits `0`.
 
+### [2026-10-24] - Continuous Integration (GitHub Actions CI Pipeline) (Task 5.5)
+- **Context**: As test suites expanded to 8 suites and 298 assertions across core APIs, tasks, documents, spaced repetition, quiz gap detection, and SSE streaming, manual individual test execution created regression risk and lacked automated branch gatekeeping.
+- **Decision**: 
+  - Designed `server/scripts/run-all-tests.js`: sequentially executes all 8 test suites, captures stdout/stderr, counts assertions, times execution per suite, formats an editorial ASCII summary table, and enforces clean exit codes (0 for full pass, 1 for any failure).
+  - Configured root `package.json` with `"test"`, `"test:server"`, `"build"`, and `"build:client"`.
+  - Built `.github/workflows/ci.yml` running on Node 20.x with npm dependency caching across two parallel jobs: `test-server` (unified server test runner with mock test environment) and `build-client` (production Vite build with artifact integrity verification).
+  - Added simulated mock provider fallback in `test-ai.js` when `AI_API_KEY` is not present, enabling 100% test pass rate in external CI without exposing API credentials.
+  - Added live GitHub Actions status badge and comprehensive testing documentation to `README.md`.
+- **Alternatives Considered**: Monolithic single-file test script (rejected to preserve ability to run isolated domain suites during focused local development). Running tests concurrently (rejected because multiple in-memory MongoDB instances on identical ports can conflict).
+- **Impact**: Zero regressions — `npm test` runs all 8 test suites (298/298 passing in ~17s); `npm run build:client` exits `0`; CI automated gatekeeping active.
+
 ---
+
 
 
 

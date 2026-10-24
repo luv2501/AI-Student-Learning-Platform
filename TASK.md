@@ -291,5 +291,23 @@
   - [x] Verified `npm --prefix client run build` (0 errors).
   - [x] Verified 100% pass rate across all 8 server test suites: `test-api.js` (27/27), `test-tasks.js` (42/42), `test-documents.js` (40/40), `test-ai.js` (23/23), `test-citations.js` (40/40), `test-spaced-repetition.js` (46/46), `test-quiz-history.js` (38/38), `test-streaming.js` (42/42) -> 298/298 passing.
 
+### Task 5.5: Continuous Integration (GitHub Actions CI Pipeline)
+- [x] Unified Test Runner Script & Package Configuration:
+  - [x] Created `server/scripts/run-all-tests.js` executing all 8 server test suites sequentially with execution timing and live progress.
+  - [x] Implemented ASCII summary table with passed/failed counts and exit code handling (0 on success, 1 on any failure).
+  - [x] Updated root `package.json` scripts: `"test"`, `"test:server"`, `"build"`, `"build:client"`.
+  - [x] Updated `server/package.json` scripts: `"test"`, `"test:streaming"`.
+- [x] GitHub Actions Workflow Configuration:
+  - [x] Created `.github/workflows/ci.yml` running on pushes to `main` and `feat-*`, plus PRs to `main`.
+  - [x] Job 1 (`test-server`): Ubuntu latest, Node 20.x, npm caching, and test run with mock test secrets and environment variables.
+  - [x] Job 2 (`build-client`): Ubuntu latest, Node 20.x, npm caching, Vite production bundle build, and dist integrity verification.
+  - [x] Added concurrency control (`cancel-in-progress: true`) to avoid redundant runs on fast pushes.
+- [x] Repository Verification & Documentation:
+  - [x] Extracted git remote (`luv2501/AI-Student-Learning-Platform`) and added GitHub Actions status badge to `README.md`.
+  - [x] Updated `README.md` with complete documentation for running the unified test runner locally and the full suite breakdown.
+  - [x] Added CI simulated mock provider fallback in `server/scripts/test-ai.js` when `AI_API_KEY` is not configured in external runner environments.
+  - [x] Verified local execution of `npm test` (298/298 tests passing) and `npm run build:client` (exit code 0).
+
+
 
 

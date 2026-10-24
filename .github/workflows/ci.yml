@@ -1,0 +1,77 @@
+name: CI
+
+on:
+  push:
+    branches:
+      - main
+      - 'feat-*'
+  pull_request:
+    branches:
+      - main
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test-server:
+    name: Server Tests
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        node-version: [20.x]
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js ${{ matrix.node-version }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node-version }}
+          cache: 'npm'
+          cache-dependency-path: 'server/package-lock.json'
+
+      - name: Install server dependencies
+        run: |
+          npm --prefix server ci
+
+      - name: Run unified server test suites
+        env:
+          NODE_ENV: test
+          JWT_SECRET: ci-test-secret-key-at-least-32-chars-long
+          PORT: 5001
+        run: |
+          node server/scripts/run-all-tests.js
+
+  build-client:
+    name: Client Production Build
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        node-version: [20.x]
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js ${{ matrix.node-version }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node-version }}
+          cache: 'npm'
+          cache-dependency-path: 'client/package-lock.json'
+
+      - name: Install client dependencies
+        run: |
+          npm --prefix client ci
+
+      - name: Build client production bundle
+        run: |
+          npm --prefix client run build
+
+      - name: Verify build artifact integrity
+        run: |
+          test -d client/dist || { echo "client/dist directory not found"; exit 1; }
+          test -f client/dist/index.html || { echo "client/dist/index.html not generated"; exit 1; }
+          echo "Client production bundle verified successfully."
